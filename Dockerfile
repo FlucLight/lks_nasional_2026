@@ -24,7 +24,7 @@ RUN apk add --no-cache \
     unzip \
     git
 
-RUN docker-php-ext-install pdo_mysql bcmath gd SimpleXML
+RUN docker-php-ext-install pdo_mysql bcmath gd simplexml
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -47,7 +47,7 @@ RUN apk add --no-cache \
     unzip \
     git
 
-RUN docker-php-ext-install pdo_mysql bcmath gd SimpleXML
+RUN docker-php-ext-install pdo_mysql bcmath gd simplexml
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
