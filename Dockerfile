@@ -20,7 +20,7 @@ RUN apk add --no-cache \
     git \
     mysql-client
 
-RUN docker-php-ext-install pdo pdo_mysql bcmath gd Simplexml
+RUN docker-php-ext-install pdo pdo_mysql bcmath gd simplexml
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
