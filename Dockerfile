@@ -3,12 +3,10 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-
 ENV NODE_OPTIONS="--max-old-space-size=512"
 RUN npm run build
 
 FROM php:8.3-fpm-alpine
-
 RUN apk add --no-cache \
     nginx \
     supervisor \
@@ -21,7 +19,6 @@ RUN apk add --no-cache \
     mysql-client
 
 RUN docker-php-ext-install pdo pdo_mysql bcmath gd simplexml
-
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
@@ -29,8 +26,8 @@ WORKDIR /var/www/html
 COPY . .
 
 COPY --from=frontend-builder /app/public/build ./public/build
-RUN composer install --no-dev --optimize-autoloader
 
+RUN composer install --no-dev --optimize-autoloader
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 COPY ./docker/nginx.conf /etc/nginx/nginx.conf
