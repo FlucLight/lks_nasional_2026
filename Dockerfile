@@ -26,7 +26,7 @@ RUN apk add --no-cache \
 
 RUN docker-php-ext-install pdo_mysql bcmath gd simplexml
 
-# Install Composer
+
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
@@ -45,8 +45,8 @@ RUN apk add --no-cache \
     libxml2-dev \
     zip \
     unzip \
-    git
-
+    git \
+    mysql-client
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
