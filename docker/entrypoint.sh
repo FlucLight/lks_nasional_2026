@@ -2,8 +2,17 @@
 set -e
 
 echo "Menunggu database siap..."
-until php artisan db:show > /dev/null 2>&1; do
-  echo "Database belum siap, coba lagi dalam 2 detik..."
+MAX_TRIES=15
+COUNT=0
+
+until php artisan migrate:status > /tmp/db_check.log 2>&1; do
+  COUNT=$((COUNT+1))
+  echo "Database belum siap (percobaan $COUNT/$MAX_TRIES)..."
+  cat /tmp/db_check.log
+  if [ "$COUNT" -ge "$MAX_TRIES" ]; then
+    echo "Gagal konek database setelah $MAX_TRIES percobaan. Lanjut paksa migrate..."
+    break
+  fi
   sleep 2
 done
 
