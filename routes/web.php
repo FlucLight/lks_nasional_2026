@@ -9,6 +9,7 @@ Route::get('/', function () {
 })->name('dashboard');
 
 Route::post('/predict', [PredictController::class, 'predict']);
+Route::post('/api/predict', [PredictController::class, 'predict']);
 
 Route::middleware([
     'auth:sanctum',

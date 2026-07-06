@@ -69,7 +69,7 @@
 
                 <div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
                     <a href="/" class="flex shrink-0 items-center gap-2 group">
-<img src="{{ asset('images/logo_smk.png') }}" alt="Logo SMKN 1 Tenggarong" class="w-10 h-10 object-contain transition-transform duration-300 group-hover:scale-110">                        <span class="text-base font-black tracking-tight text-white uppercase">Rash</span>
+                        <img src="{{ asset('images/logo_smk.png') }}" alt="Logo SMKN 1 Tenggarong" class="w-10 h-10 object-contain transition-transform duration-300 group-hover:scale-110">                        <span class="text-base font-black tracking-tight text-white uppercase">Rash</span>
                     </a>
                     <div class="hidden sm:ml-8 sm:block">
                         <div class="flex space-x-1">
@@ -139,15 +139,33 @@
 
     <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-8">
 
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch">
+    <div class="flex items-center justify-between mb-4">
+        <p id="status" class="text-[12px] font-medium inline-flex items-center gap-2 text-[#6C757D]">
+            <span class="w-1.5 h-1.5 bg-[#17A2B8] rounded-full"></span>
+            Menyiapkan mesin deteksi
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
 
         <div class="lg:col-span-3 flex flex-col gap-4">
 
-            <p id="status"
-                class="text-[12px] font-medium inline-flex items-center gap-2 text-[#6C757D]">
-                <span class="w-1.5 h-1.5 bg-[#17A2B8] rounded-full"></span>
-                Menyiapkan mesin deteksi
-            </p>
+            <div class="w-full bg-white rounded-[16px] shadow-[0_2px_4px_rgba(0,0,0,0.075)] p-4 border border-[#E9ECEF] flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold text-[#343A40] uppercase tracking-wider">Mode Scan:</span>
+                    <div class="relative inline-flex items-center bg-[#F1F2F4] rounded-full p-1 gap-1">
+                        <input type="checkbox" id="modeToggle" class="hidden" checked>
+                        <button type="button" id="modeBtnAuto"
+                            class="px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide transition-all duration-200 bg-[#3F51B5] text-white shadow-sm">
+                            Otomatis
+                        </button>
+                        <button type="button" id="modeBtnManual"
+                            class="px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide transition-all duration-200 text-[#6C757D] hover:text-[#343A40]">
+                            Manual
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <div class="w-full bg-white rounded-[16px] shadow-[0_2px_4px_rgba(0,0,0,0.075)] p-4 border border-[#E9ECEF] hover:shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-all duration-300 relative">
 
@@ -164,9 +182,9 @@
                         <span class="text-[14px] font-semibold text-[#6C757D]">Menyiapkan kamera</span>
                     </div>
 
-                    <video id="webcam" autoplay playsinline muted class="w-full h-auto block opacity-0 transition-opacity duration-300"></video>
+                    <video id="webcam" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover block opacity-0 transition-opacity duration-300"></video>
 
-                    <img id="previewImage" class="hidden w-full h-auto block object-contain" alt="Preview File" />
+                    <img id="previewImage" class="hidden absolute inset-0 w-full h-full object-cover" alt="Preview File" />
 
                     <canvas id="overlay" class="absolute top-0 left-0 w-full h-full pointer-events-none z-10"></canvas>
 
@@ -182,7 +200,7 @@
             </div>
 
             <button id="btnCaptureManual" class="w-full flex items-center justify-center gap-2 py-3 px-10 bg-[#3F51B5] hover:bg-[#7971EA] active:bg-[#1C4B82] text-white rounded-[30px] text-xs font-semibold uppercase tracking-wider transition-all duration-300 shadow-[0_2px_10px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_14px_rgba(0,0,0,0.15)]">
-                Ambil Foto (Manual Capture)
+                Ambil Foto Sekarang
             </button>
 
             <button id="btnSwitchCamera" class="hidden w-full flex items-center justify-center gap-2 py-3 px-10 bg-[#8BC34A] hover:bg-[#7CB342] text-white rounded-[30px] text-xs font-semibold uppercase tracking-wider transition-all duration-300 shadow-md">
@@ -191,30 +209,37 @@
 
         </div>
 
-        <div class="lg:col-span-2 flex flex-col gap-4 h-full">
+        <div class="lg:col-span-2 flex flex-col gap-4">
 
-            <label id="uploadLabel" class="flex flex-col items-center justify-center w-full h-20 border border-dashed border-[#D1D5DB] bg-white hover:bg-[#F8F9FA] rounded-[16px] cursor-pointer transition duration-300 group">
-                <div class="flex flex-col items-center justify-center py-3 px-4 text-center">
+            <label id="uploadLabel" class="flex items-center justify-center w-full border border-dashed border-[#D1D5DB] bg-white hover:bg-[#F8F9FA] rounded-[16px] cursor-pointer transition duration-300 group py-4 px-4 h-[78px]">
+                <svg class="w-6 h-6 text-[#3F51B5] shrink-0 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 7.5m0 0L7.5 12m4.5-4.5v9" />
+                </svg>
+                <div class="text-left">
                     <p class="text-[14px] font-semibold text-[#343A40]">
-                        <span class="text-[#3F51B5] hover:underline">Unggah Gambar</span> atau seret kemari
+                        <span class="text-[#3F51B5] group-hover:underline">Unggah Gambar</span> atau seret kemari
                     </p>
-                    <p class="text-[12px] text-[#6C757D] mt-1 italic opacity-80">PNG, JPG, JPEG (Maks. 5MB)</p>
+                    <p class="text-[12px] text-[#6C757D] mt-0.5 italic opacity-80">PNG, JPG, JPEG (Maks. 5MB)</p>
                 </div>
                 <input id="fileInput" type="file" accept="image/*" class="hidden" />
             </label>
 
-            <div class="bg-white border border-[#E9ECEF] rounded-[16px] p-4 text-left shadow-[0_2px_4px_rgba(0,0,0,0.075)] flex-1">
+            <div class="bg-white border border-[#E9ECEF] rounded-[16px] p-4 text-left shadow-[0_2px_4px_rgba(0,0,0,0.075)]">
                 <h4 class="text-[15.2px] font-bold text-[#343A40] mb-3 flex items-center gap-1.5">
                     <span class="text-lg">Objek yang Dikenali</span>
                 </h4>
                 <div class="text-[13.5px] text-[#6C757D] space-y-3 leading-relaxed">
                     <p>
                         <span class="inline-block text-[10px] font-bold tracking-wider uppercase text-[#8BC34A] bg-[#8BC34A]/10 px-2 py-0.5 rounded-full mr-1">Organik</span><br>
-                        pisang, apel, jeruk, wortel, sandwich, pizza, brokoli, tanaman pot
+                        daun kering, sisa makanan, kulit buah, ranting, sayuran, cangkang telur, kertas/kardus basah
                     </p>
                     <p>
                         <span class="inline-block text-[10px] font-bold tracking-wider uppercase text-[#F23A2E] bg-[#F23A2E]/10 px-2 py-0.5 rounded-full mr-1">Anorganik</span><br>
-                        botol, gelas, cangkir, tas, sendok, garpu, pisau, ponsel, sikat gigi
+                        botol plastik, kaleng minuman, kantong plastik, gelas kaca, sedotan, styrofoam, karet, kain bekas
+                    </p>
+                    <p>
+                        <span class="inline-block text-[10px] font-bold tracking-wider uppercase text-[#F59E0B] bg-[#F59E0B]/10 px-2 py-0.5 rounded-full mr-1">B3 (Berbahaya)</span><br>
+                        baterai bekas, lampu neon, botol parfum/semprotan, masker medis, jarum suntik, oli bekas, wadah detergen
                     </p>
                 </div>
             </div>
@@ -242,6 +267,62 @@
     const btnSwitchCamera = document.getElementById('btnSwitchCamera');
     const btnCaptureManual = document.getElementById('btnCaptureManual');
 
+    const modeToggle = document.getElementById('modeToggle');
+    const modeBtnAuto = document.getElementById('modeBtnAuto');
+    const modeBtnManual = document.getElementById('modeBtnManual');
+
+    function updateModeButtonsUI() {
+        const activeClasses = ['bg-[#3F51B5]', 'text-white', 'shadow-sm'];
+        const inactiveClasses = ['text-[#6C757D]'];
+
+        if (modeToggle.checked) {
+            modeBtnAuto.classList.add(...activeClasses);
+            modeBtnAuto.classList.remove(...inactiveClasses);
+            modeBtnManual.classList.remove(...activeClasses);
+            modeBtnManual.classList.add(...inactiveClasses);
+        } else {
+            modeBtnManual.classList.add(...activeClasses);
+            modeBtnManual.classList.remove(...inactiveClasses);
+            modeBtnAuto.classList.remove(...activeClasses);
+            modeBtnAuto.classList.add(...inactiveClasses);
+        }
+    }
+
+    modeBtnAuto.addEventListener('click', () => {
+        if (modeToggle.checked) return;
+        modeToggle.checked = true;
+        updateModeButtonsUI();
+        modeToggle.dispatchEvent(new Event('change'));
+    });
+
+    modeBtnManual.addEventListener('click', () => {
+        if (!modeToggle.checked) return;
+        modeToggle.checked = false;
+        updateModeButtonsUI();
+        modeToggle.dispatchEvent(new Event('change'));
+    });
+
+    updateModeButtonsUI();
+
+function syncCanvasSize() {
+    const rect = videoContainer.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+        canvas.width = Math.round(rect.width);
+        canvas.height = Math.round(rect.height);
+    }
+}
+
+function getContentRenderRect(srcW, srcH) {
+    const dw = canvas.width;
+    const dh = canvas.height;
+    if (!srcW || !srcH || !dw || !dh) return null;
+    
+    const scale = Math.max(dw / srcW, dh / srcH);
+    const rw = srcW * scale;
+    const rh = srcH * scale;
+    return { x: (dw - rw) / 2, y: (dh - rh) / 2, w: rw, h: rh, scale };
+}
+
 let lastSpokenText = "";
 let speechThrottleTimeout = false;
 let isStaticMode = false;
@@ -250,6 +331,7 @@ let isFrozen = false;
 let lastSavedCategory = "";
 let lastSavedTime = 0;
 let categoryThrottleTimestamps = {};
+let liveLoopTimeoutId = null;
 
 const CATEGORY_STYLE = {
     organik:   { label: "Sampah Organik",   color: "#10B981", emoji: "🍂" },
@@ -258,7 +340,6 @@ const CATEGORY_STYLE = {
 };
 
 const PREDICT_CONFIDENCE_THRESHOLD = 0.5;
-const LIVE_PREDICT_INTERVAL_MS = 1800; 
 
 async function callPredictAPI(blob) {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -296,25 +377,26 @@ function renderPredictionToCanvas(result, canvasWidth, canvasHeight) {
     const labelText = `${style.emoji} ${style.label} (${(result.confidence * 100).toFixed(0)}%)`;
 
     if (result.bbox) {
-        
-        const scaleX = canvasWidth / result.image_width;
-        const scaleY = canvasHeight / result.image_height;
+        const rr = getContentRenderRect(result.image_width, result.image_height);
+        if (rr) {
+            const x = rr.x + result.bbox.x * rr.scale;
+            const y = rr.y + result.bbox.y * rr.scale;
+            const w = result.bbox.width * rr.scale;
+            const h = result.bbox.height * rr.scale;
 
-        const x = result.bbox.x * scaleX;
-        const y = result.bbox.y * scaleY;
-        const width = result.bbox.width * scaleX;
-        const height = result.bbox.height * scaleY;
+            ctx.strokeStyle = style.color;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(x, y, w, h);
 
-        ctx.strokeStyle = style.color;
-        ctx.lineWidth = 4;
-        ctx.strokeRect(x, y, width, height);
+            const lblW = Math.min(w, 210);
+            const lblH = 26;
+            ctx.fillStyle = style.color;
+            ctx.fillRect(x, Math.max(rr.y, y - lblH), lblW, lblH);
 
-        ctx.fillStyle = style.color;
-        ctx.fillRect(x, Math.max(0, y - 25), Math.min(width, 220), 25);
-
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = "bold 12px sans-serif";
-        ctx.fillText(labelText, x + 5, Math.max(15, y - 8));
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "bold 12px sans-serif";
+            ctx.fillText(labelText, x + 5, Math.max(rr.y + 17, y - 8));
+        }
     }
 
     return labelText;
@@ -396,11 +478,8 @@ async function main() {
         if (cameraPlaceholder) cameraPlaceholder.classList.add('hidden');
         video.classList.remove('opacity-0');
 
-        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Live AI Tracker Aktif`;
-        statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20 px-3.5 py-1.5 rounded-full animate-none";
-
-        canvas.width = video.videoWidth || 320;
-        canvas.height = video.videoHeight || 240;
+        updateStatusTextByMode();
+        syncCanvasSize();
 
         liveTrackLoop();
     } catch (err) {
@@ -411,20 +490,30 @@ async function main() {
     }
 }
 
+function updateStatusTextByMode() {
+    if (isStaticMode) return;
+    if (modeToggle.checked) {
+        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Live AI Tracker Aktif (Mode Otomatis)`;
+        statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20 px-3.5 py-1.5 rounded-full animate-none";
+    } else {
+        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span> Kamera Siap (Mode Manual)`;
+        statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3.5 py-1.5 rounded-full animate-none";
+    }
+}
+
 async function liveTrackLoop() {
+    if (liveLoopTimeoutId) clearTimeout(liveLoopTimeoutId);
+
     if (isStaticMode || isFrozen) {
-        setTimeout(liveTrackLoop, LIVE_PREDICT_INTERVAL_MS);
+        liveLoopTimeoutId = setTimeout(liveTrackLoop, 100);
         return;
     }
 
     if (video.readyState >= 2) {
-        if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-        }
+        syncCanvasSize();
 
         try {
-            const blob = await frameToBlob(video, canvas.width, canvas.height);
+            const blob = await frameToBlob(video, video.videoWidth, video.videoHeight);
             const result = await callPredictAPI(blob);
             const labelText = renderPredictionToCanvas(result, canvas.width, canvas.height);
 
@@ -436,15 +525,25 @@ async function liveTrackLoop() {
             if (labelText && result.confidence > PREDICT_CONFIDENCE_THRESHOLD) {
                 const style = CATEGORY_STYLE[result.class];
                 speakCategory(style ? style.label : result.class);
-                autoSnapshotHandler(result.class, style ? style.label : result.class, result.confidence, true);
+                
+                if (modeToggle.checked) {
+                    autoSnapshotHandler(result.class, style ? style.label : result.class, result.confidence, true);
+                }
             }
         } catch (err) {
             console.error("Live predict error:", err);
         }
     }
 
-    setTimeout(liveTrackLoop, LIVE_PREDICT_INTERVAL_MS);
+    liveLoopTimeoutId = setTimeout(liveTrackLoop, 100);
 }
+
+modeToggle.addEventListener('change', () => {
+    updateStatusTextByMode();
+    if (!modeToggle.checked) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+});
 
 function triggerCameraFlashAndFreeze(isAuto = false) {
     const flash = document.getElementById('cameraFlash');
@@ -472,6 +571,7 @@ function resumeCameraLive() {
     video.play().then(() => {
         btnSwitchCamera.classList.add('hidden');
         btnCaptureManual.classList.remove('hidden');
+        updateStatusTextByMode();
     }).catch(err => console.error("Resume failed:", err));
 }
 
@@ -484,10 +584,9 @@ btnCaptureManual.addEventListener('click', async () => {
     statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-3.5 py-1.5 rounded-full animate-none";
 
     try {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        syncCanvasSize();
 
-        const blob = await frameToBlob(video, canvas.width, canvas.height);
+        const blob = await frameToBlob(video, video.videoWidth, video.videoHeight);
         const result = await callPredictAPI(blob);
         const labelText = renderPredictionToCanvas(result, canvas.width, canvas.height);
 
@@ -538,11 +637,9 @@ fileInput.addEventListener('change', async (e) => {
 async function runStaticDetection(originalFile) {
     if (!isStaticMode) return;
 
-    canvas.width = previewImage.naturalWidth;
-    canvas.height = previewImage.naturalHeight;
+    syncCanvasSize();
 
     try {
-        
         const result = await callPredictAPI(originalFile);
         const labelText = renderPredictionToCanvas(result, canvas.width, canvas.height);
 
@@ -580,19 +677,16 @@ async function runStaticDetection(originalFile) {
             setupCamera().then(() => {
                 if (cameraPlaceholder) cameraPlaceholder.classList.add('hidden');
                 video.classList.remove('opacity-0');
-                statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Live AI Tracker Aktif`;
-                statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20 px-3.5 py-1.5 rounded-full animate-none";
-                
-                canvas.width = video.videoWidth || 320;
-                canvas.height = video.videoHeight || 240;
-                
+                updateStatusTextByMode();
+
+                syncCanvasSize();
+
                 isFrozen = false;
                 btnCaptureManual.classList.remove('hidden');
                 btnSwitchCamera.classList.add('hidden');
                 liveTrackLoop();
             }).catch(err => console.error("Webcam reconnect failed:", err));
         } else {
-
             resumeCameraLive();
         }
     });
@@ -600,12 +694,12 @@ async function runStaticDetection(originalFile) {
     function autoSnapshotHandler(objectName, category, score, needsVisualFreeze = false) {
         const now = Date.now();
 
-        if (category === lastSavedCategory && (now - lastSavedTime) < 5000) {
+        if (category === lastSavedCategory && (now - lastSavedTime) < 10000) {
             return;
         }
 
         const lastCategoryThrottle = categoryThrottleTimestamps[category] || 0;
-        if ((now - lastCategoryThrottle) < 6000) {
+        if ((now - lastCategoryThrottle) < 10000) {
             return;
         }
         
@@ -722,7 +816,6 @@ async function runStaticDetection(originalFile) {
         }, 100);
         
         document.getElementById('btnKeepPermanent').addEventListener('click', () => {
-
             const history = JSON.parse(localStorage.getItem('ecoscan_history') || '[]');
             const updated = history.map(item => {
                 if (item.uuid === record.uuid) {
@@ -795,6 +888,7 @@ async function runStaticDetection(originalFile) {
     }
 
     window.addEventListener('DOMContentLoaded', main);
+    window.addEventListener('resize', syncCanvasSize);
     </script>
 </body>
 

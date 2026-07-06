@@ -71,7 +71,8 @@
 
                 <div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
                     <a href="/" class="flex shrink-0 items-center gap-2 group">
-<img src="{{ asset('images/logo_smk.png') }}" alt="Logo SMKN 1 Tenggarong" class="w-10 h-10 object-contain transition-transform duration-300 group-hover:scale-110">                        <span class="text-base font-black tracking-tight text-white uppercase">Rash</span>
+                        <img src="{{ asset('images/logo_smk.png') }}" alt="Logo SMKN 1 Tenggarong" class="w-10 h-10 object-contain transition-transform duration-300 group-hover:scale-110">
+                        <span class="text-base font-black tracking-tight text-white uppercase">Rash</span>
                     </a>
                     <div class="hidden sm:ml-8 sm:block">
                         <div class="flex space-x-1">
@@ -134,51 +135,64 @@
                 Statistik Deteksi Sampah
             </h1>
             <p class="text-[14.08px] text-[#6C757D] mt-1">
-                Grafik perbandingan jenis sampah organik dan anorganik yang berhasil di scan.
+                Grafik perbandingan jenis sampah organik, anorganik, dan B3 yang berhasil di scan.
             </p>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#E9ECEF] border border-[#E9ECEF] rounded-[16px] bg-white mb-8">
+        <!-- STATISTIK BOXES (Ditambahkan B3) -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[#E9ECEF] border border-[#E9ECEF] rounded-[16px] bg-white mb-8">
 
-    <div class="p-6">
-        <div class="text-[11px] font-semibold text-[#6C757D] uppercase tracking-wider mb-3">Total Deteksi</div>
-        <div class="flex items-baseline gap-1">
-            <span id="statTotal" class="text-4xl font-bold text-[#343A40] tabular-nums">0</span>
+            <div class="p-5">
+                <div class="text-[11px] font-semibold text-[#6C757D] uppercase tracking-wider mb-2">Total Deteksi</div>
+                <div class="flex items-baseline gap-1">
+                    <span id="statTotal" class="text-3xl font-bold text-[#343A40] tabular-nums">0</span>
+                </div>
+                <div class="text-[11px] text-[#ADB5BD] mt-2">Seluruh item tersimpan</div>
+            </div>
+
+            <div class="p-5">
+                <div class="text-[11px] font-semibold text-[#6C757D] uppercase tracking-wider mb-2">Sampah Organik</div>
+                <div class="flex items-baseline gap-1">
+                    <span id="statOrganik" class="text-3xl font-bold text-[#10B981] tabular-nums">0</span>
+                </div>
+                <div id="percOrganik" class="text-[11px] text-[#ADB5BD] mt-2">0% dari total sampah</div>
+            </div>
+
+            <div class="p-5">
+                <div class="text-[11px] font-semibold text-[#6C757D] uppercase tracking-wider mb-2">Sampah Anorganik</div>
+                <div class="flex items-baseline gap-1">
+                    <span id="statAnorganik" class="text-3xl font-bold text-[#F23A2E] tabular-nums">0</span>
+                </div>
+                <div id="percAnorganik" class="text-[11px] text-[#ADB5BD] mt-2">0% dari total sampah</div>
+            </div>
+
+            <div class="p-5">
+                <div class="text-[11px] font-semibold text-[#6C757D] uppercase tracking-wider mb-2">Sampah B3</div>
+                <div class="flex items-baseline gap-1">
+                    <span id="statB3" class="text-3xl font-bold text-[#F59E0B] tabular-nums">0</span>
+                </div>
+                <div id="percB3" class="text-[11px] text-[#ADB5BD] mt-2">0% dari total sampah</div>
+            </div>
+
         </div>
-        <div class="text-[11px] text-[#ADB5BD] mt-2">Seluruh item tersimpan</div>
-    </div>
-
-    <div class="p-6">
-        <div class="text-[11px] font-semibold text-[#6C757D] uppercase tracking-wider mb-3">Sampah Organik</div>
-        <div class="flex items-baseline gap-1">
-            <span id="statOrganik" class="text-4xl font-bold text-[#10B981] tabular-nums">0</span>
-        </div>
-        <div id="percOrganik" class="text-[11px] text-[#ADB5BD] mt-2">0% dari total sampah</div>
-    </div>
-
-    <div class="p-6">
-        <div class="text-[11px] font-semibold text-[#6C757D] uppercase tracking-wider mb-3">Sampah Anorganik</div>
-        <div class="flex items-baseline gap-1">
-            <span id="statAnorganik" class="text-4xl font-bold text-[#F23A2E] tabular-nums">0</span>
-        </div>
-        <div id="percAnorganik" class="text-[11px] text-[#ADB5BD] mt-2">0% dari total sampah</div>
-    </div>
-
-</div>
 
         <div id="chartsWrapper" class="grid grid-cols-1 md:grid-cols-2 gap-6">
             
+            <!-- GRAFIK BULAT (Ditambahkan Opsi B3) -->
             <div class="bg-white border border-[#E9ECEF] rounded-[16px] p-6 shadow-[0_2px_4px_rgba(0,0,0,0.075)] flex flex-col items-center">
-                <h3 class="text-[13.6px] font-bold text-[#343A40] mb-6 uppercase tracking-wider text-center w-full">Rasio Kategori Sampah</h3>
+                <h3 class="text-[13.6px] font-bold text-[#343A40] mb-6 uppercase tracking-wider text-center w-full">Rasio Jenis Sampah</h3>
                 <div class="w-full max-w-[200px] aspect-square flex items-center justify-center">
                     <canvas id="ratioChart"></canvas>
                 </div>
-                <div class="flex gap-6 mt-6 text-[10px] font-bold uppercase tracking-wider">
+                <div class="flex flex-wrap justify-center gap-4 mt-6 text-[10px] font-bold uppercase tracking-wider">
                     <div class="flex items-center gap-1.5 text-[#10B981]">
                         <span class="w-2.5 h-2.5 bg-[#10B981] rounded-full inline-block"></span> Organik
                     </div>
                     <div class="flex items-center gap-1.5 text-[#F23A2E]">
                         <span class="w-2.5 h-2.5 bg-[#F23A2E] rounded-full inline-block"></span> Anorganik
+                    </div>
+                    <div class="flex items-center gap-1.5 text-[#F59E0B]">
+                        <span class="w-2.5 h-2.5 bg-[#F59E0B] rounded-full inline-block"></span> B3
                     </div>
                 </div>
             </div>
@@ -225,13 +239,14 @@
             const statTotal = document.getElementById('statTotal');
             const statOrganik = document.getElementById('statOrganik');
             const statAnorganik = document.getElementById('statAnorganik');
+            const statB3 = document.getElementById('statB3');
             const percOrganik = document.getElementById('percOrganik');
             const percAnorganik = document.getElementById('percAnorganik');
+            const percB3 = document.getElementById('percB3');
             const chartsWrapper = document.getElementById('chartsWrapper');
             const emptyState = document.getElementById('emptyState');
 
             try {
-
                 const res = await fetch('/api/scans');
                 if (res.ok) {
                     const dbData = await res.json();
@@ -273,25 +288,32 @@
                 statTotal.innerText = '0';
                 statOrganik.innerText = '0';
                 statAnorganik.innerText = '0';
+                statB3.innerText = '0';
                 percOrganik.innerText = '0% dari total sampah';
                 percAnorganik.innerText = '0% dari total sampah';
+                percB3.innerText = '0% dari total sampah';
                 return;
             }
 
             chartsWrapper.classList.remove('hidden');
             emptyState.classList.add('hidden');
 
-            const organicCount = history.filter(item => item.category.includes('Organik')).length;
-            const anorganicCount = history.filter(item => item.category.includes('Anorganik')).length;
+            // Kalkulasi Logika Kategori (Termasuk B3)
+            const organicCount = history.filter(item => item.category.toLowerCase().includes('organik') && !item.category.toLowerCase().includes('anorganik')).length;
+            const anorganicCount = history.filter(item => item.category.toLowerCase().includes('anorganik')).length;
+            const b3Count = history.filter(item => item.category.toLowerCase().includes('b3') || item.category.toLowerCase().includes('berbahaya')).length;
 
             const organicPerc = total > 0 ? Math.round((organicCount / total) * 100) : 0;
             const anorganicPerc = total > 0 ? Math.round((anorganicCount / total) * 100) : 0;
+            const b3Perc = total > 0 ? Math.round((b3Count / total) * 100) : 0;
 
             statTotal.innerText = total;
             statOrganik.innerText = organicCount;
             statAnorganik.innerText = anorganicCount;
+            statB3.innerText = b3Count;
             percOrganik.innerText = `${organicPerc}% dari total sampah`;
             percAnorganik.innerText = `${anorganicPerc}% dari total sampah`;
+            percB3.innerText = `${b3Perc}% dari total sampah`;
 
             const objectCounts = {};
             history.forEach(item => {
@@ -312,13 +334,14 @@
             const ctxRatio = document.getElementById('ratioChart').getContext('2d');
             if (ratioChartInstance) ratioChartInstance.destroy();
             
+            // Konfigurasi Doughnut Chart yang ditambahkan B3
             ratioChartInstance = new Chart(ctxRatio, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Organik', 'Anorganik'],
+                    labels: ['Organik', 'Anorganik', 'B3'],
                     datasets: [{
-                        data: [organicCount, anorganicCount],
-                        backgroundColor: ['#10B981', '#F23A2E'], 
+                        data: [organicCount, anorganicCount, b3Count],
+                        backgroundColor: ['#10B981', '#F23A2E', '#F59E0B'], 
                         borderColor: '#ffffff', 
                         borderWidth: 3,
                         hoverOffset: 4

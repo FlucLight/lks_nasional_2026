@@ -69,7 +69,8 @@
 
                 <div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
                     <a href="/" class="flex shrink-0 items-center gap-2 group">
-<img src="{{ asset('images/logo_smk.png') }}" alt="Logo SMKN 1 Tenggarong" class="w-10 h-10 object-contain transition-transform duration-300 group-hover:scale-110">                        <span class="text-base font-black tracking-tight text-white uppercase">Rash</span>
+                        <img src="{{ asset('images/logo_smk.png') }}" alt="Logo SMKN 1 Tenggarong" class="w-10 h-10 object-contain transition-transform duration-300 group-hover:scale-110">                        
+                        <span class="text-base font-black tracking-tight text-white uppercase">Rash</span>
                     </a>
                     <div class="hidden sm:ml-8 sm:block">
                         <div class="flex space-x-1">
@@ -162,28 +163,20 @@
             </div>
         </div>
 
+        <!-- STRUKTUR TABEL (Hapus Nama Objek, Ganti Kategori ke Jenis Sampah) -->
         <div class="overflow-x-auto">
             <table class="min-w-full text-left text-sm">
                 <thead>
                     <tr class="border-b border-[#E9ECEF]">
                         <th class="px-6 py-3.5 font-semibold text-[#495057] whitespace-nowrap">Preview</th>
-                        <th class="px-6 py-3.5 font-semibold text-[#495057] whitespace-nowrap">Nama Objek</th>
-                        <th class="px-6 py-3.5 font-semibold text-[#495057] whitespace-nowrap">Kategori</th>
+                        <th class="px-6 py-3.5 font-semibold text-[#495057] whitespace-nowrap">Jenis Sampah</th>
                         <th class="px-6 py-3.5 font-semibold text-[#495057] whitespace-nowrap">Akurasi</th>
                         <th class="px-6 py-3.5 font-semibold text-[#495057] whitespace-nowrap">Waktu Scan</th>
                         <th class="px-6 py-3.5 font-semibold text-[#495057] text-right whitespace-nowrap">Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="historyList">
-                    <tr class="border-b border-[#E9ECEF] odd:bg-white even:bg-[#F8F9FA]/60 hover:bg-[#F1F3FE] transition-colors">
-                        <td class="px-6 py-4"><img src="..." class="w-10 h-10 rounded-[8px] object-cover" /></td>
-                        <td class="px-6 py-4 font-semibold text-[#343A40]">Botol Plastik</td>
-                        <td class="px-6 py-4 text-[#6C757D]">Anorganik</td>
-                        <td class="px-6 py-4 text-[#6C757D]">92%</td>
-                        <td class="px-6 py-4 text-[#6C757D]">2 menit lalu</td>
-                        <td class="px-6 py-4 text-right"><a href="#" class="text-[#3F51B5] hover:text-[#7971EA] font-semibold">Hapus</a></td>
-                    </tr>
-                    
+                    <!-- Data dimasukkan via Javascript di bawah -->
                 </tbody>
             </table>
         </div>
@@ -205,7 +198,7 @@
             </svg>
             <h3 class="text-[15.2px] font-bold text-[#343A40]">Belum ada riwayat scan</h3>
             <p class="text-[14.08px] text-[#6C757D] mt-1 mx-auto max-w-[280px] leading-relaxed">
-                Kamera belum mendeteksi sampah organik/anorganik dengan akurasi kuat.
+                Kamera belum mendeteksi sampah organik/anorganik/B3 dengan akurasi kuat.
             </p>
             <a href="/" class="mt-4 px-6 py-2 bg-[#3F51B5] hover:bg-[#7971EA] text-white rounded-[30px] text-xs font-semibold transition shadow-md">
                 Mulai Scan Sekarang
@@ -309,6 +302,7 @@
             renderHistory();
         }
 
+        // JS RENDER HISTORY (Nama Objek dihilangkan & Ditambahkan Logika Warna B3)
         function renderHistory() {
             const history = getHistoryData();
 
@@ -352,10 +346,14 @@
                 tr.className = 'hover:bg-[#F8F9FA] transition-all duration-150';
 
                 let badgeClass = '';
-                if (item.category.includes('Organik')) {
+                let categoryLower = item.category.toLowerCase();
+                
+                if (categoryLower.includes('organik') && !categoryLower.includes('anorganik')) {
                     badgeClass = 'bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/20';
-                } else if (item.category.includes('Anorganik')) {
+                } else if (categoryLower.includes('anorganik')) {
                     badgeClass = 'bg-[#F23A2E]/10 text-[#F23A2E] border border-[#F23A2E]/20';
+                } else if (categoryLower.includes('b3') || categoryLower.includes('berbahaya')) {
+                    badgeClass = 'bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/20';
                 } else {
                     badgeClass = 'bg-[#3F51B5]/10 text-[#3F51B5] border border-[#3F51B5]/20';
                 }
@@ -366,13 +364,13 @@
                     ? 'text-amber-400 hover:text-[#6C757D] scale-110' 
                     : 'text-[#6C757D] hover:text-amber-400';
 
+                // Kolom Nama Objek td sudah dihapus di sini
                 tr.innerHTML = `
                     <td class="px-6 py-3">
                         <button onclick="openImagePreview('${item.thumbnail || 'https://via.placeholder.com/640x480/F8F9FA/343A40?text=EcoScan'}', '${item.objectName}', '${item.timestamp}')" class="w-12 h-9 rounded-[8px] overflow-hidden border border-[#E9ECEF] bg-[#F8F9FA] block focus:outline-none focus:ring-2 focus:ring-[#3F51B5]">
                             <img src="${item.thumbnail || 'https://via.placeholder.com/120x90/F8F9FA/343A40?text=EcoScan'}" class="w-full h-full object-cover hover:scale-110 transition duration-200" alt="Trash Thumbnail" />
                         </button>
                     </td>
-                    <td class="px-6 py-3 font-semibold text-[#343A40] capitalize">${item.objectName}</td>
                     <td class="px-6 py-3">
                         <span class="inline-flex px-2.5 py-0.5 rounded-[30px] text-[10px] font-bold ${badgeClass}">
                             ${item.category}
@@ -447,7 +445,6 @@
         }
 
         window.togglePermanent = function(uuid) {
-
             const history = getHistoryData();
             const updated = history.map(item => {
                 if (item.uuid === uuid) {
@@ -473,7 +470,6 @@
 
         window.deleteRecord = function(uuid) {
             if (confirm("Apakah Anda yakin ingin menghapus log scan ini?")) {
-
                 const history = getHistoryData();
                 const updated = history.filter(item => item.uuid !== uuid);
                 saveHistoryData(updated);
@@ -501,7 +497,6 @@
             }
 
             if (confirm("⚠️ PERINGATAN! Ini akan menghapus seluruh data scan secara permanen dari Database dan LocalStorage. Lanjutkan?")) {
-
                 localStorage.removeItem('ecoscan_history');
                 renderHistory();
 
