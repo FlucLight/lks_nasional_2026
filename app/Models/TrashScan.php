@@ -17,9 +17,6 @@ class TrashScan extends Model
         'is_permanent',
     ];
 
-    /**
-     * Get the user that owns this scan.
-     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(\App\Models\User::class);

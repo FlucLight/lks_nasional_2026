@@ -2,34 +2,31 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TrashScanController;
+use App\Http\Controllers\PredictController;
 
-// Halaman Utama: Live & File Detector Dual-Mode (Public - tanpa login)
 Route::get('/', function () {
     return view('welcome');
 })->name('dashboard');
 
-// Protected Routes - harus login
+Route::post('/predict', [PredictController::class, 'predict']);
+
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
 ])->group(function () {
-    // Halaman Dashboard User (Jetstream default)
     Route::get('/dashboard-user', function () {
         return view('dashboard');
     })->name('dashboard-user');
 
-    // Halaman Log Riwayat Scan
     Route::get('/history', function () {
         return view('history');
     })->name('history');
 
-    // Halaman Metrik Statistik & Analytics
     Route::get('/analytics', function () {
         return view('analytics');
     })->name('analytics');
 
-    // Database Scan Persistence Routes (scoped per-user)
     Route::prefix('api/scans')->group(function () {
         Route::get('/', [TrashScanController::class, 'index']);
         Route::post('/', [TrashScanController::class, 'store']);

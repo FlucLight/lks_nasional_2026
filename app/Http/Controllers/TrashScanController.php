@@ -7,9 +7,7 @@ use Illuminate\Http\Request;
 
 class TrashScanController extends Controller
 {
-    /**
-     * Get all scans for the authenticated user.
-     */
+    
     public function index()
     {
         $scans = TrashScan::where('user_id', auth()->id())
@@ -19,9 +17,6 @@ class TrashScanController extends Controller
         return response()->json($scans);
     }
 
-    /**
-     * Store a new scan for the authenticated user.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -49,9 +44,6 @@ class TrashScanController extends Controller
         ], 201);
     }
 
-    /**
-     * Toggle the permanent status (scoped to authenticated user).
-     */
     public function togglePermanent($uuid)
     {
         $scan = TrashScan::where('uuid', $uuid)
@@ -68,9 +60,6 @@ class TrashScanController extends Controller
         ]);
     }
 
-    /**
-     * Delete a single scan log (scoped to authenticated user).
-     */
     public function destroy($uuid)
     {
         $scan = TrashScan::where('uuid', $uuid)
@@ -85,9 +74,6 @@ class TrashScanController extends Controller
         ]);
     }
 
-    /**
-     * Clear all scans for the authenticated user only.
-     */
     public function clearAll()
     {
         TrashScan::where('user_id', auth()->id())->delete();

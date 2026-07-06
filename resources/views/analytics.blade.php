@@ -301,12 +301,12 @@
 
             const sortedObjects = Object.entries(objectCounts)
                 .sort((a, b) => b[1] - a[1])
-                .slice(0, 5); // Take top 5
+                .slice(0, 5); 
 
             const topLabels = sortedObjects.map(entry => entry[0]);
             const topData = sortedObjects.map(entry => entry[1]);
 
-            Chart.defaults.color = '#6C757D'; // secondary charcoal
+            Chart.defaults.color = '#6C757D'; 
             Chart.defaults.font.family = "'Poppins', sans-serif";
 
             const ctxRatio = document.getElementById('ratioChart').getContext('2d');
@@ -318,8 +318,8 @@
                     labels: ['Organik', 'Anorganik'],
                     datasets: [{
                         data: [organicCount, anorganicCount],
-                        backgroundColor: ['#10B981', '#F23A2E'], // mint, red
-                        borderColor: '#ffffff', // white border
+                        backgroundColor: ['#10B981', '#F23A2E'], 
+                        borderColor: '#ffffff', 
                         borderWidth: 3,
                         hoverOffset: 4
                     }]
@@ -327,10 +327,10 @@
                 options: {
                     plugins: {
                         legend: {
-                            display: false // Using custom legend
+                            display: false 
                         },
                         tooltip: {
-                            backgroundColor: '#343A40', // primary charcoal
+                            backgroundColor: '#343A40', 
                             titleColor: '#ffffff',
                             bodyColor: '#ffffff',
                             borderWidth: 1,
@@ -353,13 +353,13 @@
                     datasets: [{
                         label: 'Frekuensi Scan',
                         data: topData,
-                        backgroundColor: '#3F51B5', // indigo
+                        backgroundColor: '#3F51B5', 
                         borderRadius: 30,
                         hoverBackgroundColor: '#7971EA'
                     }]
                 },
                 options: {
-                    indexAxis: 'y', // horizontal bar
+                    indexAxis: 'y', 
                     plugins: {
                         legend: {
                             display: false

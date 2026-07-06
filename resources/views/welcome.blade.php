@@ -16,9 +16,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@tailwindplus/elements@1" type="module"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
-
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -245,416 +242,334 @@
     const btnSwitchCamera = document.getElementById('btnSwitchCamera');
     const btnCaptureManual = document.getElementById('btnCaptureManual');
 
-    let modelNet;
-    let lastSpokenText = "";
-    let speechThrottleTimeout = false;
-    let isStaticMode = false;
-    let isFrozen = false;
+let lastSpokenText = "";
+let speechThrottleTimeout = false;
+let isStaticMode = false;
+let isFrozen = false;
 
-    let lastSavedCategory = "";
-    let lastSavedTime = 0;
-    let categoryThrottleTimestamps = {};
+let lastSavedCategory = "";
+let lastSavedTime = 0;
+let categoryThrottleTimestamps = {};
 
-    const organikKeywords = ['banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'potted plant', 'leaf', 'food waste'];
-    const anorganikKeywords = ['bottle', 'cup', 'wine glass', 'can', 'box', 'knife', 'fork', 'spoon', 'plastic bag', 'backpack', 'handbag', 'suitcase', 'bowl', 'cell phone', 'mouse', 'keyboard', 'toothbrush', 'scissors'];
+const CATEGORY_STYLE = {
+    organik:   { label: "Sampah Organik",   color: "#10B981", emoji: "🍂" },
+    anorganik: { label: "Sampah Anorganik", color: "#EF4444", emoji: "🧴" },
+    b3:        { label: "Sampah B3",        color: "#F59E0B", emoji: "⚠️" },
+};
 
-    async function setupCamera() {
-        const constraintsList = [
-            {
-                video: {
-                    facingMode: "environment",
-                    width: { ideal: 640 },
-                    height: { ideal: 480 }
-                },
-                audio: false
-            },
-            {
-                video: {
-                    facingMode: "environment"
-                },
-                audio: false
-            },
-            {
-                video: {
-                    facingMode: "user",
-                    width: { ideal: 640 },
-                    height: { ideal: 480 }
-                },
-                audio: false
-            },
-            {
-                video: true,
-                audio: false
-            }
-        ];
+const PREDICT_CONFIDENCE_THRESHOLD = 0.5;
+const LIVE_PREDICT_INTERVAL_MS = 1800; 
 
-        let stream = null;
-        let lastError = null;
+async function callPredictAPI(blob) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const formData = new FormData();
+    formData.append('image', blob, 'snapshot.jpg');
 
-        for (const constraints of constraintsList) {
-            try {
-                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                    stream = await navigator.mediaDevices.getUserMedia(constraints);
-                    if (stream) break;
-                }
-            } catch (err) {
-                console.warn("Constraint failed:", constraints, err);
-                lastError = err;
-            }
-        }
+    const res = await fetch('/api/predict', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': csrfToken },
+        body: formData,
+    });
 
-        if (!stream) {
-            const errorMsg = lastError ? lastError.message : "Kamera tidak didukung atau tidak ditemukan.";
-            showCameraError(errorMsg);
-            throw lastError || new Error("Kamera tidak ditemukan");
-        }
+    if (!res.ok) throw new Error('Predict API error: ' + res.status);
+    return res.json();
+}
 
-        video.srcObject = stream;
+function frameToBlob(source, width, height) {
+    return new Promise((resolve) => {
+        const tmp = document.createElement('canvas');
+        tmp.width = width;
+        tmp.height = height;
+        tmp.getContext('2d').drawImage(source, 0, 0, width, height);
+        tmp.toBlob((blob) => resolve(blob), 'image/jpeg', 0.85);
+    });
+}
+
+function renderPredictionToCanvas(result, canvasWidth, canvasHeight) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (!result || result.confidence < PREDICT_CONFIDENCE_THRESHOLD) {
+        return null;
+    }
+
+    const style = CATEGORY_STYLE[result.class] || { label: result.class, color: "#6366F1", emoji: "" };
+    const labelText = `${style.emoji} ${style.label} (${(result.confidence * 100).toFixed(0)}%)`;
+
+    if (result.bbox) {
         
-        return new Promise((resolve) => {
-            video.onloadedmetadata = () => {
-                video.play()
-                    .then(() => resolve(video))
-                    .catch(err => {
-                        console.error("Gagal memutar stream video:", err);
-                        resolve(video);
-                    });
-            };
-            
-            setTimeout(() => {
-                if (video.videoWidth > 0) {
-                    resolve(video);
-                }
-            }, 2000);
-        });
+        const scaleX = canvasWidth / result.image_width;
+        const scaleY = canvasHeight / result.image_height;
+
+        const x = result.bbox.x * scaleX;
+        const y = result.bbox.y * scaleY;
+        const width = result.bbox.width * scaleX;
+        const height = result.bbox.height * scaleY;
+
+        ctx.strokeStyle = style.color;
+        ctx.lineWidth = 4;
+        ctx.strokeRect(x, y, width, height);
+
+        ctx.fillStyle = style.color;
+        ctx.fillRect(x, Math.max(0, y - 25), Math.min(width, 220), 25);
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 12px sans-serif";
+        ctx.fillText(labelText, x + 5, Math.max(15, y - 8));
     }
 
-    function stopCamera() {
-        if (video.srcObject) {
-            const tracks = video.srcObject.getTracks();
-            tracks.forEach(track => track.stop());
-            video.srcObject = null;
-        }
-    }
+    return labelText;
+}
 
-    function showCameraError(msg) {
-        if (cameraPlaceholder) {
-            cameraPlaceholder.innerHTML = `
-                <div class="p-4 text-center">
-                    <span class="text-3xl block mb-2">⚠️</span>
-                    <p class="text-xs font-bold text-red-500 mb-1">Akses Kamera Gagal</p>
-                    <p class="text-[10px] text-gray-500 max-w-[240px] mx-auto mb-3">${msg}</p>
-                    <button onclick="window.location.reload()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-semibold transition">
-                        Coba Lagi
-                    </button>
-                </div>
-            `;
-        }
-        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-red-500 rounded-full"></span> Akses Kamera Gagal!`;
-        statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-red-500/10 text-red-400 border border-red-500/20 px-3.5 py-1.5 rounded-full animate-none";
-    }
+async function setupCamera() {
+    const constraintsList = [
+        { video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },
+        { video: { facingMode: "environment" }, audio: false },
+        { video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },
+        { video: true, audio: false }
+    ];
 
-    async function main() {
+    let stream = null;
+    let lastError = null;
+
+    for (const constraints of constraintsList) {
         try {
-            statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span> Memuat Engine AI...`;
-            modelNet = await cocoSsd.load();
-            
-            statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> Menghubungkan Kamera...`;
-            await setupCamera();
-
-            if (cameraPlaceholder) cameraPlaceholder.classList.add('hidden');
-            video.classList.remove('opacity-0');
-
-            statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Live AI Tracker Aktif`;
-            statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20 px-3.5 py-1.5 rounded-full animate-none";
-
-            canvas.width = video.videoWidth || 320;
-            canvas.height = video.videoHeight || 240;
-
-            trackFrame();
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                if (stream) break;
+            }
         } catch (err) {
-            console.error("Inisialisasi aplikasi gagal:", err);
-            if (!statusEl.innerText.includes("Gagal")) {
-                showCameraError(err.message || "Gagal memuat tracker.");
-            }
+            console.warn("Constraint failed:", constraints, err);
+            lastError = err;
         }
     }
 
-    async function trackFrame() {
-        if (isStaticMode || isFrozen) return; // Stop drawing/predicting if static mode or frozen
-
-        if (video.readyState >= 2) {
-            if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-            }
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            try {
-                const predictions = await modelNet.detect(video);
-                let detectedObj = null;
-
-                predictions.forEach(prediction => {
-                    const objectName = prediction.class.toLowerCase();
-                    const score = prediction.score;
-
-                    if (score > 0.4) {
-                        let labelKategori = "";
-                        let strokeColor = "";
-
-                        if (organikKeywords.includes(objectName)) {
-                            labelKategori = "Sampah Organik";
-                            strokeColor = "#10B981"; // Emerald
-                        } else if (anorganikKeywords.includes(objectName)) {
-                            labelKategori = "Sampah Anorganik";
-                            strokeColor = "#EF4444"; // Red
-                        } else {
-                            labelKategori = prediction.class;
-                            strokeColor = "#6366F1"; // Indigo default
-                        }
-
-                        const [x, y, width, height] = prediction.bbox;
-
-                        ctx.strokeStyle = strokeColor;
-                        ctx.lineWidth = 4;
-                        ctx.strokeRect(x, y, width, height);
-
-                        ctx.fillStyle = strokeColor;
-                        ctx.fillRect(x, y - 25, width > 200 ? 200 : width, 25);
-
-                        ctx.fillStyle = "#FFFFFF";
-                        ctx.font = "bold 12px sans-serif";
-                        ctx.fillText(`${labelKategori} (${(score * 100).toFixed(0)}%)`, x + 5, y - 8);
-
-                        detectedObj = `${labelKategori} (${(score * 100).toFixed(0)}%)`;
-
-                        if (score > 0.5 && labelKategori.includes("Sampah")) {
-                            speakCategory(labelKategori);
-                            autoSnapshotHandler(objectName, labelKategori, score, true); // true for auto freeze visual feedback
-                        }
-                    }
-                });
-
-                const liveCategoryEl = document.getElementById('liveCategory');
-                if (liveCategoryEl) {
-                    if (detectedObj) {
-                        liveCategoryEl.innerText = detectedObj;
-                    } else {
-                        liveCategoryEl.innerText = "Menunggu Objek...";
-                    }
-                }
-            } catch (err) {
-                console.error("Frame detection loop error:", err);
-            }
-        }
-
-        requestAnimationFrame(trackFrame);
+    if (!stream) {
+        const errorMsg = lastError ? lastError.message : "Kamera tidak didukung atau tidak ditemukan.";
+        showCameraError(errorMsg);
+        throw lastError || new Error("Kamera tidak ditemukan");
     }
 
-    function triggerCameraFlashAndFreeze(isAuto = false) {
+    video.srcObject = stream;
 
-        const flash = document.getElementById('cameraFlash');
-        if (flash) {
-            flash.classList.remove('opacity-0');
-            flash.classList.add('opacity-85');
-            setTimeout(() => {
-                flash.classList.replace('opacity-85', 'opacity-0');
-            }, 150);
-        }
+    return new Promise((resolve) => {
+        video.onloadedmetadata = () => {
+            video.play().then(() => resolve(video)).catch(err => {
+                console.error("Gagal memutar stream video:", err);
+                resolve(video);
+            });
+        };
+        setTimeout(() => {
+            if (video.videoWidth > 0) resolve(video);
+        }, 2000);
+    });
+}
 
-        isFrozen = true;
-        video.pause();
+function stopCamera() {
+    if (video.srcObject) {
+        video.srcObject.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+    }
+}
 
-        if (isAuto) {
+function showCameraError(msg) {
+    if (cameraPlaceholder) {
+        cameraPlaceholder.innerHTML = `
+            <div class="p-4 text-center">
+                <span class="text-3xl block mb-2">⚠️</span>
+                <p class="text-xs font-bold text-red-500 mb-1">Akses Kamera Gagal</p>
+                <p class="text-[10px] text-gray-500 max-w-[240px] mx-auto mb-3">${msg}</p>
+                <button onclick="window.location.reload()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-semibold transition">
+                    Coba Lagi
+                </button>
+            </div>
+        `;
+    }
+    statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-red-500 rounded-full"></span> Akses Kamera Gagal!`;
+    statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-red-500/10 text-red-400 border border-red-500/20 px-3.5 py-1.5 rounded-full animate-none";
+}
 
-            setTimeout(() => {
-                if (isFrozen && !isStaticMode) {
-                    resumeCameraLive();
-                }
-            }, 1500);
-        } else {
+async function main() {
+    try {
+        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> Menghubungkan Kamera...`;
+        await setupCamera();
 
-            btnSwitchCamera.classList.remove('hidden');
-            btnCaptureManual.classList.add('hidden');
+        if (cameraPlaceholder) cameraPlaceholder.classList.add('hidden');
+        video.classList.remove('opacity-0');
+
+        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Live AI Tracker Aktif`;
+        statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20 px-3.5 py-1.5 rounded-full animate-none";
+
+        canvas.width = video.videoWidth || 320;
+        canvas.height = video.videoHeight || 240;
+
+        liveTrackLoop();
+    } catch (err) {
+        console.error("Inisialisasi aplikasi gagal:", err);
+        if (!statusEl.innerText.includes("Gagal")) {
+            showCameraError(err.message || "Gagal memuat tracker.");
         }
     }
+}
 
-    function resumeCameraLive() {
-        isFrozen = false;
-        video.play().then(() => {
-            btnSwitchCamera.classList.add('hidden');
-            btnCaptureManual.classList.remove('hidden');
-            trackFrame();
-        }).catch(err => console.error("Resume failed:", err));
+async function liveTrackLoop() {
+    if (isStaticMode || isFrozen) {
+        setTimeout(liveTrackLoop, LIVE_PREDICT_INTERVAL_MS);
+        return;
     }
 
-    btnCaptureManual.addEventListener('click', async () => {
-        if (isStaticMode || isFrozen) return;
-
-        triggerCameraFlashAndFreeze(false); // manual freeze
-
-        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> Menganalisis Snapshot...`;
-        statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-3.5 py-1.5 rounded-full animate-none";
-
-        try {
-
-            const predictions = await modelNet.detect(video);
-            let detectedObj = null;
-
+    if (video.readyState >= 2) {
+        if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            predictions.forEach(prediction => {
-                const objectName = prediction.class.toLowerCase();
-                const score = prediction.score;
-
-                if (score > 0.4) {
-                    let labelKategori = "";
-                    let strokeColor = "";
-
-                    if (organikKeywords.includes(objectName)) {
-                        labelKategori = "Sampah Organik";
-                        strokeColor = "#10B981";
-                    } else if (anorganikKeywords.includes(objectName)) {
-                        labelKategori = "Sampah Anorganik";
-                        strokeColor = "#EF4444";
-                    } else {
-                        labelKategori = prediction.class;
-                        strokeColor = "#6366F1";
-                    }
-
-                    const [x, y, width, height] = prediction.bbox;
-
-                    ctx.strokeStyle = strokeColor;
-                    ctx.lineWidth = 4;
-                    ctx.strokeRect(x, y, width, height);
-
-                    ctx.fillStyle = strokeColor;
-                    ctx.fillRect(x, y - 25, width > 200 ? 200 : width, 25);
-
-                    ctx.fillStyle = "#FFFFFF";
-                    ctx.font = "bold 12px sans-serif";
-                    ctx.fillText(`${labelKategori} (${(score * 100).toFixed(0)}%)`, x + 5, y - 8);
-
-                    detectedObj = `${labelKategori} (${(score * 100).toFixed(0)}%)`;
-
-                    if (labelKategori.includes("Sampah")) {
-                        speakCategory(labelKategori);
-                        autoSnapshotHandler(objectName, labelKategori, score, false);
-                    }
-                }
-            });
-
-            statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Snapshot Manual Selesai`;
-            statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20 px-3.5 py-1.5 rounded-full animate-none";
-
-            const liveCategoryEl = document.getElementById('liveCategory');
-            if (liveCategoryEl) {
-                liveCategoryEl.innerText = detectedObj ? detectedObj : "Tidak ada objek sampah terdeteksi.";
-            }
-        } catch (err) {
-            console.error("Manual detection error:", err);
         }
-    });
-
-    fileInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        isStaticMode = true;
-        stopCamera();
-
-        video.classList.add('hidden');
-        previewImage.classList.remove('hidden');
-        btnSwitchCamera.classList.remove('hidden');
-        btnCaptureManual.classList.add('hidden');
-        if (cameraPlaceholder) cameraPlaceholder.classList.add('hidden');
-
-        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> Menganalisis Gambar...`;
-        statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-3.5 py-1.5 rounded-full animate-none";
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            previewImage.src = event.target.result;
-            previewImage.onload = async () => {
-                await runStaticDetection();
-            };
-        };
-        reader.readAsDataURL(file);
-    });
-
-    async function runStaticDetection() {
-        if (!isStaticMode) return;
-
-        canvas.width = previewImage.naturalWidth;
-        canvas.height = previewImage.naturalHeight;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         try {
-            const predictions = await modelNet.detect(previewImage);
-            let detectedObj = null;
-
-            predictions.forEach(prediction => {
-                const objectName = prediction.class.toLowerCase();
-                const score = prediction.score;
-
-                if (score > 0.4) { // Lower score threshold to 40% for better static upload reliability
-                    let labelKategori = "";
-                    let strokeColor = "";
-
-                    if (organikKeywords.includes(objectName)) {
-                        labelKategori = "Sampah Organik";
-                        strokeColor = "#10B981";
-                    } else if (anorganikKeywords.includes(objectName)) {
-                        labelKategori = "Sampah Anorganik";
-                        strokeColor = "#EF4444";
-                    } else {
-                        labelKategori = prediction.class;
-                        strokeColor = "#6366F1";
-                    }
-
-                    const [x, y, width, height] = prediction.bbox;
-
-                    ctx.strokeStyle = strokeColor;
-                    ctx.lineWidth = 4;
-                    ctx.strokeRect(x, y, width, height);
-
-                    ctx.fillStyle = strokeColor;
-                    ctx.fillRect(x, y - 25, width > 200 ? 200 : width, 25);
-
-                    ctx.fillStyle = "#FFFFFF";
-                    ctx.font = "bold 12px sans-serif";
-                    ctx.fillText(`${labelKategori} (${(score * 100).toFixed(0)}%)`, x + 5, y - 8);
-
-                    detectedObj = `${labelKategori} (${(score * 100).toFixed(0)}%)`;
-
-                    if (labelKategori.includes("Sampah")) {
-                        speakCategory(labelKategori);
-                        autoSnapshotHandler(objectName, labelKategori, score, false);
-                    }
-                }
-            });
-
-            statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Analisis File Selesai`;
-            statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20 px-3.5 py-1.5 rounded-full animate-none";
+            const blob = await frameToBlob(video, canvas.width, canvas.height);
+            const result = await callPredictAPI(blob);
+            const labelText = renderPredictionToCanvas(result, canvas.width, canvas.height);
 
             const liveCategoryEl = document.getElementById('liveCategory');
             if (liveCategoryEl) {
-                liveCategoryEl.innerText = detectedObj ? detectedObj : "Tidak ada sampah terdeteksi.";
+                liveCategoryEl.innerText = labelText || "Menunggu Objek...";
+            }
+
+            if (labelText && result.confidence > PREDICT_CONFIDENCE_THRESHOLD) {
+                const style = CATEGORY_STYLE[result.class];
+                speakCategory(style ? style.label : result.class);
+                autoSnapshotHandler(result.class, style ? style.label : result.class, result.confidence, true);
             }
         } catch (err) {
-            console.error("Static image analysis error:", err);
-            statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-red-500 rounded-full"></span> Gagal Analisis Gambar`;
-            statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-red-500/10 text-red-400 border border-red-500/20 px-3.5 py-1.5 rounded-full animate-none";
+            console.error("Live predict error:", err);
         }
     }
+
+    setTimeout(liveTrackLoop, LIVE_PREDICT_INTERVAL_MS);
+}
+
+function triggerCameraFlashAndFreeze(isAuto = false) {
+    const flash = document.getElementById('cameraFlash');
+    if (flash) {
+        flash.classList.remove('opacity-0');
+        flash.classList.add('opacity-85');
+        setTimeout(() => flash.classList.replace('opacity-85', 'opacity-0'), 150);
+    }
+
+    isFrozen = true;
+    video.pause();
+
+    if (isAuto) {
+        setTimeout(() => {
+            if (isFrozen && !isStaticMode) resumeCameraLive();
+        }, 1500);
+    } else {
+        btnSwitchCamera.classList.remove('hidden');
+        btnCaptureManual.classList.add('hidden');
+    }
+}
+
+function resumeCameraLive() {
+    isFrozen = false;
+    video.play().then(() => {
+        btnSwitchCamera.classList.add('hidden');
+        btnCaptureManual.classList.remove('hidden');
+    }).catch(err => console.error("Resume failed:", err));
+}
+
+btnCaptureManual.addEventListener('click', async () => {
+    if (isStaticMode || isFrozen) return;
+
+    triggerCameraFlashAndFreeze(false);
+
+    statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> Menganalisis Snapshot...`;
+    statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-3.5 py-1.5 rounded-full animate-none";
+
+    try {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        const blob = await frameToBlob(video, canvas.width, canvas.height);
+        const result = await callPredictAPI(blob);
+        const labelText = renderPredictionToCanvas(result, canvas.width, canvas.height);
+
+        if (labelText) {
+            const style = CATEGORY_STYLE[result.class];
+            speakCategory(style ? style.label : result.class);
+            autoSnapshotHandler(result.class, style ? style.label : result.class, result.confidence, false);
+        }
+
+        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Snapshot Manual Selesai`;
+        statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20 px-3.5 py-1.5 rounded-full animate-none";
+
+        const liveCategoryEl = document.getElementById('liveCategory');
+        if (liveCategoryEl) {
+            liveCategoryEl.innerText = labelText || "Tidak ada objek sampah terdeteksi.";
+        }
+    } catch (err) {
+        console.error("Manual detection error:", err);
+    }
+});
+
+fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    isStaticMode = true;
+    stopCamera();
+
+    video.classList.add('hidden');
+    previewImage.classList.remove('hidden');
+    btnSwitchCamera.classList.remove('hidden');
+    btnCaptureManual.classList.add('hidden');
+    if (cameraPlaceholder) cameraPlaceholder.classList.add('hidden');
+
+    statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> Menganalisis Gambar...`;
+    statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-3.5 py-1.5 rounded-full animate-none";
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        previewImage.src = event.target.result;
+        previewImage.onload = async () => {
+            await runStaticDetection(file);
+        };
+    };
+    reader.readAsDataURL(file);
+});
+
+async function runStaticDetection(originalFile) {
+    if (!isStaticMode) return;
+
+    canvas.width = previewImage.naturalWidth;
+    canvas.height = previewImage.naturalHeight;
+
+    try {
+        
+        const result = await callPredictAPI(originalFile);
+        const labelText = renderPredictionToCanvas(result, canvas.width, canvas.height);
+
+        if (labelText) {
+            const style = CATEGORY_STYLE[result.class];
+            speakCategory(style ? style.label : result.class);
+            autoSnapshotHandler(result.class, style ? style.label : result.class, result.confidence, false);
+        }
+
+        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Analisis File Selesai`;
+        statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20 px-3.5 py-1.5 rounded-full animate-none";
+
+        const liveCategoryEl = document.getElementById('liveCategory');
+        if (liveCategoryEl) {
+            liveCategoryEl.innerText = labelText || "Tidak ada sampah terdeteksi.";
+        }
+    } catch (err) {
+        console.error("Static image analysis error:", err);
+        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-red-500 rounded-full"></span> Gagal Analisis Gambar`;
+        statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-red-500/10 text-red-400 border border-red-500/20 px-3.5 py-1.5 rounded-full animate-none";
+    }
+}
 
     btnSwitchCamera.addEventListener('click', () => {
         if (isStaticMode) {
             isStaticMode = false;
-            fileInput.value = ""; // Clear file upload
+            fileInput.value = ""; 
             previewImage.classList.add('hidden');
             video.classList.remove('hidden');
             if (cameraPlaceholder) cameraPlaceholder.classList.remove('hidden');
@@ -674,7 +589,7 @@
                 isFrozen = false;
                 btnCaptureManual.classList.remove('hidden');
                 btnSwitchCamera.classList.add('hidden');
-                trackFrame();
+                liveTrackLoop();
             }).catch(err => console.error("Webcam reconnect failed:", err));
         } else {
 
@@ -699,7 +614,7 @@
         categoryThrottleTimestamps[category] = now;
 
         if (needsVisualFreeze && !isStaticMode && !isFrozen) {
-            triggerCameraFlashAndFreeze(true); // temporary freeze (1.5 seconds)
+            triggerCameraFlashAndFreeze(true); 
         }
 
         const tempCanvas = document.createElement('canvas');

@@ -253,9 +253,9 @@
         const btnSize5 = document.getElementById('btnSize5');
         const btnSize15 = document.getElementById('btnSize15');
         
-        let currentFilter = 'all'; // 'all' | 'permanent'
-        let itemsPerPage = 5;      // Default to 5
-        let currentPage = 1;       // Default to 1
+        let currentFilter = 'all'; 
+        let itemsPerPage = 5;      
+        let currentPage = 1;       
 
         btnSize5.addEventListener('click', () => {
             itemsPerPage = 5;
@@ -400,7 +400,7 @@
             paginationButtons.innerHTML = '';
 
             if (totalPages <= 1) {
-                return; // No need for pagination if only 1 page
+                return; 
             }
 
             const prevBtn = document.createElement('button');

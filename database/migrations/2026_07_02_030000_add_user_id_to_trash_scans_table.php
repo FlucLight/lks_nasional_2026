@@ -7,12 +7,10 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
+    
     public function up(): void
     {
-        // Hapus semua data lama yang tidak memiliki user_id
+        
         DB::table('trash_scans')->truncate();
 
         Schema::table('trash_scans', function (Blueprint $table) {
@@ -21,9 +19,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('trash_scans', function (Blueprint $table) {
