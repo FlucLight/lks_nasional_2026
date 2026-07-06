@@ -502,10 +502,10 @@ async function main() {
 function updateStatusTextByMode() {
     if (isStaticMode) return;
     if (modeToggle.checked) {
-        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Live AI Tracker Aktif (Mode Otomatis)`;
+        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Kamera Dan Model AI Siap (Mode Otomatis)`;
         statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20 px-3.5 py-1.5 rounded-full animate-none";
     } else {
-        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span> Kamera Siap (Mode Manual)`;
+        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span> Kamera Dan Model AI Siap (Mode Manual)`;
         statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3.5 py-1.5 rounded-full animate-none";
     }
 }
