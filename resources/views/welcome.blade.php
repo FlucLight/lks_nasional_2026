@@ -533,7 +533,6 @@ async function liveTrackLoop() {
 
             if (labelText && result.confidence > PREDICT_CONFIDENCE_THRESHOLD) {
                 const style = CATEGORY_STYLE[result.class];
-                speakCategory(style ? style.label : result.class);
                 
                 if (modeToggle.checked) {
                     autoSnapshotHandler(result.class, style ? style.label : result.class, result.confidence, true);
