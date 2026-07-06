@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Riwayat Scan - EcoScan AI</title>
+    <title>SMK Negeri 1 Tenggarong RASH</title>
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -163,7 +163,6 @@
             </div>
         </div>
 
-        <!-- STRUKTUR TABEL (Hapus Nama Objek, Ganti Kategori ke Jenis Sampah) -->
         <div class="overflow-x-auto">
             <table class="min-w-full text-left text-sm">
                 <thead>
@@ -176,7 +175,7 @@
                     </tr>
                 </thead>
                 <tbody id="historyList">
-                    <!-- Data dimasukkan via Javascript di bawah -->
+
                 </tbody>
             </table>
         </div>
@@ -302,7 +301,6 @@
             renderHistory();
         }
 
-        // JS RENDER HISTORY (Nama Objek dihilangkan & Ditambahkan Logika Warna B3)
         function renderHistory() {
             const history = getHistoryData();
 
@@ -364,7 +362,6 @@
                     ? 'text-amber-400 hover:text-[#6C757D] scale-110' 
                     : 'text-[#6C757D] hover:text-amber-400';
 
-                // Kolom Nama Objek td sudah dihapus di sini
                 tr.innerHTML = `
                     <td class="px-6 py-3">
                         <button onclick="openImagePreview('${item.thumbnail || 'https://via.placeholder.com/640x480/F8F9FA/343A40?text=EcoScan'}', '${item.objectName}', '${item.timestamp}')" class="w-12 h-9 rounded-[8px] overflow-hidden border border-[#E9ECEF] bg-[#F8F9FA] block focus:outline-none focus:ring-2 focus:ring-[#3F51B5]">

@@ -165,6 +165,13 @@
                         </button>
                     </div>
                 </div>
+
+                <button id="btnToggleCameraFacing" class="px-4 py-1.5 bg-[#6C757D] hover:bg-[#495057] text-white rounded-[30px] text-[11px] font-bold uppercase tracking-wide transition shadow-sm flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 15v-1a4 4 0 00-4-4H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    Ganti Kamera
+                </button>
             </div>
 
             <div class="w-full bg-white rounded-[16px] shadow-[0_2px_4px_rgba(0,0,0,0.075)] p-4 border border-[#E9ECEF] hover:shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-all duration-300 relative">
@@ -266,10 +273,13 @@
     const fileInput = document.getElementById('fileInput');
     const btnSwitchCamera = document.getElementById('btnSwitchCamera');
     const btnCaptureManual = document.getElementById('btnCaptureManual');
+    const btnToggleCameraFacing = document.getElementById('btnToggleCameraFacing');
 
     const modeToggle = document.getElementById('modeToggle');
     const modeBtnAuto = document.getElementById('modeBtnAuto');
     const modeBtnManual = document.getElementById('modeBtnManual');
+
+    let currentFacingMode = "environment";
 
     function updateModeButtonsUI() {
         const activeClasses = ['bg-[#3F51B5]', 'text-white', 'shadow-sm'];
@@ -404,9 +414,8 @@ function renderPredictionToCanvas(result, canvasWidth, canvasHeight) {
 
 async function setupCamera() {
     const constraintsList = [
-        { video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },
-        { video: { facingMode: "environment" }, audio: false },
-        { video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },
+        { video: { facingMode: currentFacingMode, width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },
+        { video: { facingMode: currentFacingMode }, audio: false },
         { video: true, audio: false }
     ];
 
@@ -542,6 +551,25 @@ modeToggle.addEventListener('change', () => {
     updateStatusTextByMode();
     if (!modeToggle.checked) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+});
+
+btnToggleCameraFacing.addEventListener('click', async () => {
+    if (isStaticMode) return;
+    
+    currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+    
+    statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span> Mengubah Kamera...`;
+    statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3.5 py-1.5 rounded-full animate-pulse";
+    
+    stopCamera();
+    
+    try {
+        await setupCamera();
+        updateStatusTextByMode();
+        syncCanvasSize();
+    } catch (err) {
+        console.error("Ganti kamera gagal:", err);
     }
 });
 

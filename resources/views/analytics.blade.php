@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Statistik Deteksi - EcoScan AI</title>
+    <title>SMK Negeri 1 Tenggarong RASH</title>
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -139,7 +139,6 @@
             </p>
         </div>
 
-        <!-- STATISTIK BOXES (Ditambahkan B3) -->
         <div class="grid grid-cols-1 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[#E9ECEF] border border-[#E9ECEF] rounded-[16px] bg-white mb-8">
 
             <div class="p-5">
@@ -177,8 +176,7 @@
         </div>
 
         <div id="chartsWrapper" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            <!-- GRAFIK BULAT (Ditambahkan Opsi B3) -->
+
             <div class="bg-white border border-[#E9ECEF] rounded-[16px] p-6 shadow-[0_2px_4px_rgba(0,0,0,0.075)] flex flex-col items-center">
                 <h3 class="text-[13.6px] font-bold text-[#343A40] mb-6 uppercase tracking-wider text-center w-full">Rasio Jenis Sampah</h3>
                 <div class="w-full max-w-[200px] aspect-square flex items-center justify-center">
@@ -298,7 +296,6 @@
             chartsWrapper.classList.remove('hidden');
             emptyState.classList.add('hidden');
 
-            // Kalkulasi Logika Kategori (Termasuk B3)
             const organicCount = history.filter(item => item.category.toLowerCase().includes('organik') && !item.category.toLowerCase().includes('anorganik')).length;
             const anorganicCount = history.filter(item => item.category.toLowerCase().includes('anorganik')).length;
             const b3Count = history.filter(item => item.category.toLowerCase().includes('b3') || item.category.toLowerCase().includes('berbahaya')).length;
@@ -334,7 +331,6 @@
             const ctxRatio = document.getElementById('ratioChart').getContext('2d');
             if (ratioChartInstance) ratioChartInstance.destroy();
             
-            // Konfigurasi Doughnut Chart yang ditambahkan B3
             ratioChartInstance = new Chart(ctxRatio, {
                 type: 'doughnut',
                 data: {
