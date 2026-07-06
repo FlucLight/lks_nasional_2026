@@ -154,9 +154,9 @@
                 <div class="flex items-center gap-3">
                     <span class="text-xs font-bold text-[#343A40] uppercase tracking-wider">Mode Scan:</span>
                     <div class="relative inline-flex items-center bg-[#F1F2F4] rounded-full p-1 gap-1">
-                        <input type="checkbox" id="modeToggle" class="hidden" checked>
+                        <input type="checkbox" id="modeToggle" class="hidden">
                         <button type="button" id="modeBtnAuto"
-                            class="px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide transition-all duration-200 bg-[#3F51B5] text-white shadow-sm">
+                            class="px-3.5 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wide transition-all duration-200 text-[#6C757D] hover:text-[#343A40]">
                             Otomatis
                         </button>
                         <button type="button" id="modeBtnManual"
@@ -333,8 +333,6 @@ function getContentRenderRect(srcW, srcH) {
     return { x: (dw - rw) / 2, y: (dh - rh) / 2, w: rw, h: rh, scale };
 }
 
-let lastSpokenText = "";
-let speechThrottleTimeout = false;
 let isStaticMode = false;
 let isFrozen = false;
 
@@ -502,10 +500,10 @@ async function main() {
 function updateStatusTextByMode() {
     if (isStaticMode) return;
     if (modeToggle.checked) {
-        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Kamera Dan Model AI Siap (Mode Otomatis)`;
+        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Live AI Tracker Aktif (Mode Otomatis)`;
         statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20 px-3.5 py-1.5 rounded-full animate-none";
     } else {
-        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span> Kamera Dan Model AI Siap (Mode Manual)`;
+        statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span> Kamera Siap (Mode Manual)`;
         statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3.5 py-1.5 rounded-full animate-none";
     }
 }
@@ -736,6 +734,7 @@ async function runStaticDetection(originalFile) {
 
         if (needsVisualFreeze && !isStaticMode && !isFrozen) {
             triggerCameraFlashAndFreeze(true); 
+            speakCategory(category);
         }
 
         const tempCanvas = document.createElement('canvas');
@@ -894,11 +893,6 @@ async function runStaticDetection(originalFile) {
     }
 
     function speakCategory(kategori) {
-        if (speechThrottleTimeout || lastSpokenText === kategori) return;
-
-        speechThrottleTimeout = true;
-        lastSpokenText = kategori;
-
         if (window.speechSynthesis) {
             window.speechSynthesis.cancel();
         }
@@ -908,10 +902,6 @@ async function runStaticDetection(originalFile) {
         utterance.rate = 1.0;
 
         window.speechSynthesis.speak(utterance);
-
-        setTimeout(() => {
-            speechThrottleTimeout = false;
-        }, 5000);
     }
 
     window.addEventListener('DOMContentLoaded', main);
