@@ -25,6 +25,7 @@ class TrashScanController extends Controller
             'category' => 'required|string',
             'score' => 'required|integer',
             'thumbnail' => 'nullable|string',
+            'full_image'  => 'nullable|string',
             'is_permanent' => 'nullable|boolean',
         ]);
 
@@ -35,6 +36,7 @@ class TrashScanController extends Controller
             'category' => $validated['category'],
             'score' => $validated['score'],
             'thumbnail' => $validated['thumbnail'] ?? null,
+            'full_image' => $validated['full_image'] ?? null,
             'is_permanent' => $request->boolean('is_permanent', false),
         ]);
 
@@ -75,12 +77,14 @@ class TrashScanController extends Controller
     }
 
     public function clearAll()
-    {
-        TrashScan::where('user_id', auth()->id())->delete();
+{
+    TrashScan::where('user_id', auth()->id())
+        ->where('is_permanent', false)
+        ->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Semua log berhasil dibersihkan.'
-        ]);
-    }
+    return response()->json([
+        'success' => true,
+        'message' => 'Semua log non-favorit berhasil dibersihkan.'
+    ]);
+}
 }

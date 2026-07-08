@@ -5,6 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMK Negeri 1 Tenggarong RASH</title>
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon-32.png') }}">
+<link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/favicon-192.png') }}">
+<link rel="apple-touch-icon" href="{{ asset('images/favicon-192.png') }}">
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -146,7 +150,7 @@
                 <div class="flex items-baseline gap-1">
                     <span id="statTotal" class="text-3xl font-bold text-[#343A40] tabular-nums">0</span>
                 </div>
-                <div class="text-[11px] text-[#ADB5BD] mt-2">Seluruh item tersimpan</div>
+                <div class="text-[11px] text-[#ADB5BD] mt-2">Seluruh sampah terdeteksi</div>
             </div>
 
             <div class="p-5">
@@ -196,7 +200,7 @@
             </div>
 
             <div class="bg-white border border-[#E9ECEF] rounded-[16px] p-6 shadow-[0_2px_4px_rgba(0,0,0,0.075)] flex flex-col">
-                <h3 class="text-[13.6px] font-bold text-[#343A40] mb-6 uppercase tracking-wider text-center w-full">Item Paling Sering Di-scan</h3>
+                <h3 class="text-[13.6px] font-bold text-[#343A40] mb-6 uppercase tracking-wider text-center w-full">Sampah Paling Sering Di-scan</h3>
                 <div class="w-full flex-grow flex items-center justify-center min-h-[220px]">
                     <canvas id="objectsChart"></canvas>
                 </div>

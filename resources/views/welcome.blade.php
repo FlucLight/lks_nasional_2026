@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <html lang="id" class="light">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SMK Negeri 1 Tenggarong Rash</title>
+
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon-32.png') }}">
+<link rel="icon" type="image/png" sizes="192x192" href="{{ asset('images/favicon-192.png') }}">
+<link rel="apple-touch-icon" href="{{ asset('images/favicon-192.png') }}">
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
@@ -177,7 +181,7 @@
             <div class="w-full bg-white rounded-[16px] shadow-[0_2px_4px_rgba(0,0,0,0.075)] p-4 border border-[#E9ECEF] hover:shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-all duration-300 relative">
 
                 <div id="videoContainer"
-                    class="relative w-full aspect-video bg-[#222222] rounded-[12px] overflow-hidden border border-[#D1D5DB] flex items-center justify-center transition-all duration-300">
+    class="relative w-full aspect-[3/4] sm:aspect-video bg-[#222222] rounded-[12px] overflow-hidden border border-[#D1D5DB] flex items-center justify-center transition-all duration-300">
 
                     <div id="cameraFlash" class="absolute inset-0 bg-white opacity-0 pointer-events-none transition-opacity duration-150 z-30"></div>
 
@@ -233,25 +237,30 @@
 
             <div class="bg-white border border-[#E9ECEF] rounded-[16px] p-4 text-left shadow-[0_2px_4px_rgba(0,0,0,0.075)]">
                 <h4 class="text-[15.2px] font-bold text-[#343A40] mb-3 flex items-center gap-1.5">
-                    <span class="text-lg">Objek yang Dikenali</span>
+                    <span class="text-lg">Jenis-Jenis Sampah</span>
                 </h4>
                 <div class="text-[13.5px] text-[#6C757D] space-y-3 leading-relaxed">
-                    <p>
+                    <p class="text-justify">
                         <span class="inline-block text-[10px] font-bold tracking-wider uppercase text-[#8BC34A] bg-[#8BC34A]/10 px-2 py-0.5 rounded-full mr-1">Organik</span><br>
-                        daun kering, sisa makanan, kulit buah, ranting, sayuran, cangkang telur, kertas/kardus basah
+                        Sampah yang berasal dari makhluk hidup dan dapat terurai secara alami dengan bantuan mikroorganisme. Jenis sampah ini cocok diolah kembali menjadi kompos atau pupuk untuk tanaman.
                     </p>
-                    <p>
+                    <p class="text-justify">
                         <span class="inline-block text-[10px] font-bold tracking-wider uppercase text-[#F23A2E] bg-[#F23A2E]/10 px-2 py-0.5 rounded-full mr-1">Anorganik</span><br>
-                        botol plastik, kaleng minuman, kantong plastik, gelas kaca, sedotan, styrofoam, karet, kain bekas
+                        Sampah dari bahan sintetis atau hasil olahan pabrik yang sulit dan butuh waktu lama untuk terurai. Umumnya masih memiliki nilai ekonomis dan dapat didaur ulang jika dipisahkan dengan benar dari sampah organik.
                     </p>
-                    <p>
+                    <p class="text-justify">
                         <span class="inline-block text-[10px] font-bold tracking-wider uppercase text-[#F59E0B] bg-[#F59E0B]/10 px-2 py-0.5 rounded-full mr-1">B3 (Berbahaya)</span><br>
-                        baterai bekas, lampu neon, botol parfum/semprotan, masker medis, jarum suntik, oli bekas, wadah detergen
+                        Sampah Bahan Berbahaya dan Beracun yang mengandung zat kimia berisiko mencemari lingkungan dan membahayakan kesehatan. Memerlukan penanganan khusus dan tidak boleh dicampur dengan sampah rumah tangga biasa.
                     </p>
                 </div>
             </div>
         </div>
 
+    </div>
+    <div class="mt-6 bg-[#FFFBEB] border border-[#F59E0B]/30 rounded-[12px] px-5 py-3">
+        <p class="text-[12px] text-[#78350F] leading-relaxed text-justify">
+            <span class="font-bold">⚠️ Catatan:</span> Model AI ini masih dalam tahap pengembangan dan belum sempurna, akurasinya bisa dipengaruhi pencahayaan atau sudut gambar. Hasil deteksi <span class="font-semibold">tidak bisa dijadikan patokan mutlak</span>, tetap perlu pengecekan ulang dan pengawasan yang lebih profesional.
+        </p>
     </div>
 
 </main>
@@ -348,66 +357,182 @@ const CATEGORY_STYLE = {
 };
 
 const PREDICT_CONFIDENCE_THRESHOLD = 0.5;
+const LIVE_LOOP_INTERVAL_MS = 400;
+const GUIDE_BOX_WIDTH_RATIO = 0.85;
+const GUIDE_BOX_HEIGHT_RATIO = 0.8;
 
-async function callPredictAPI(blob) {
+async function callDetectAPI(blob) {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     const formData = new FormData();
     formData.append('image', blob, 'snapshot.jpg');
 
-    const res = await fetch('/api/predict', {
+    const res = await fetch('/api/detect', {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': csrfToken },
         body: formData,
     });
 
-    if (!res.ok) throw new Error('Predict API error: ' + res.status);
+    if (!res.ok) throw new Error('Detect API error: ' + res.status);
     return res.json();
 }
 
-function frameToBlob(source, width, height) {
+function pickBestPrediction(data) {
+    if (!data || !Array.isArray(data.predictions) || data.predictions.length === 0) {
+        return null;
+    }
+    return data.predictions.reduce((best, p) =>
+        (p.confidence > (best?.confidence ?? -1)) ? p : best, null);
+}
+
+function getGuideBoxDisplayRect() {
+    const w = canvas.width * GUIDE_BOX_WIDTH_RATIO;
+    const h = canvas.height * GUIDE_BOX_HEIGHT_RATIO;
+    return {
+        x: (canvas.width - w) / 2,
+        y: (canvas.height - h) / 2,
+        w: w,
+        h: h
+    };
+}
+
+function getGuideBoxSourceRect(srcW, srcH) {
+    const rr = getContentRenderRect(srcW, srcH);
+    if (!rr) return null;
+    const disp = getGuideBoxDisplayRect();
+    const sx = (disp.x - rr.x) / rr.scale;
+    const sy = (disp.y - rr.y) / rr.scale;
+    const sw = disp.w / rr.scale;
+    const sh = disp.h / rr.scale;
+    return {
+        x: Math.max(0, sx),
+        y: Math.max(0, sy),
+        w: Math.min(srcW - sx, sw),
+        h: Math.min(srcH - sy, sh)
+    };
+}
+
+function cropSourceToBlob(source, srcRect) {
     return new Promise((resolve) => {
         const tmp = document.createElement('canvas');
-        tmp.width = width;
-        tmp.height = height;
-        tmp.getContext('2d').drawImage(source, 0, 0, width, height);
-        tmp.toBlob((blob) => resolve(blob), 'image/jpeg', 0.85);
+        tmp.width = Math.max(1, Math.round(srcRect.w));
+        tmp.height = Math.max(1, Math.round(srcRect.h));
+        tmp.getContext('2d').drawImage(
+            source,
+            srcRect.x, srcRect.y, srcRect.w, srcRect.h,
+            0, 0, tmp.width, tmp.height
+        );
+        tmp.toBlob((blob) => resolve(blob), 'image/jpeg', 0.9);
     });
 }
 
-function renderPredictionToCanvas(result, canvasWidth, canvasHeight) {
+function isValidDetection(det) {
+    return !!(
+        det &&
+        det.class &&
+        typeof det.confidence === 'number' &&
+        det.confidence >= PREDICT_CONFIDENCE_THRESHOLD
+    );
+}
+
+function drawGuideBox(activeStyle) {
+    const rect = getGuideBoxDisplayRect();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (!result || result.confidence < PREDICT_CONFIDENCE_THRESHOLD) {
+    ctx.strokeStyle = activeStyle ? activeStyle.color : "rgba(255,255,255,0.85)";
+    ctx.lineWidth = activeStyle ? 4 : 2;
+    if (!activeStyle) {
+        ctx.setLineDash([10, 8]);
+    } else {
+        ctx.setLineDash([]);
+    }
+    ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+    ctx.setLineDash([]);
+
+    return rect;
+}
+
+function renderPredictionsToCanvas(data, srcRect, rr) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (!data || !Array.isArray(data.predictions) || data.predictions.length === 0) {
         return null;
     }
 
-    const style = CATEGORY_STYLE[result.class] || { label: result.class, color: "#6366F1", emoji: "" };
-    const labelText = `${style.emoji} ${style.label} (${(result.confidence * 100).toFixed(0)}%)`;
+    let bestLabel = null;
+    let bestConfidence = -1;
 
-    if (result.bbox) {
-        const rr = getContentRenderRect(result.image_width, result.image_height);
-        if (rr) {
-            const x = rr.x + result.bbox.x * rr.scale;
-            const y = rr.y + result.bbox.y * rr.scale;
-            const w = result.bbox.width * rr.scale;
-            const h = result.bbox.height * rr.scale;
+    data.predictions.forEach((pred) => {
+        if (!pred.class || pred.confidence < PREDICT_CONFIDENCE_THRESHOLD) return;
 
-            ctx.strokeStyle = style.color;
-            ctx.lineWidth = 3;
-            ctx.strokeRect(x, y, w, h);
+        const style = CATEGORY_STYLE[pred.class] || { label: pred.class, color: "#6366F1", emoji: "" };
+        const [bx1, by1, bx2, by2] = pred.bbox;
 
-            const lblW = Math.min(w, 210);
-            const lblH = 26;
-            ctx.fillStyle = style.color;
-            ctx.fillRect(x, Math.max(rr.y, y - lblH), lblW, lblH);
+        const guideRect = getGuideBoxDisplayRect();
+        const dispX = guideRect.x + bx1 * rr.scale;
+        const dispY = guideRect.y + by1 * rr.scale;
+        const dispW = (bx2 - bx1) * rr.scale;
+        const dispH = (by2 - by1) * rr.scale;
 
-            ctx.fillStyle = "#FFFFFF";
-            ctx.font = "bold 12px sans-serif";
-            ctx.fillText(labelText, x + 5, Math.max(rr.y + 17, y - 8));
+        ctx.strokeStyle = style.color;
+        ctx.lineWidth = 3;
+        ctx.setLineDash([]);
+        ctx.strokeRect(dispX, dispY, dispW, dispH);
+
+        const labelText = `${style.emoji} ${style.label} (${(pred.confidence * 100).toFixed(0)}%)`;
+        const lblW = Math.min(dispW, 220);
+        const lblH = 22;
+        ctx.fillStyle = style.color;
+        ctx.fillRect(dispX, Math.max(0, dispY - lblH), lblW, lblH);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 11px sans-serif";
+        ctx.fillText(labelText, dispX + 4, Math.max(15, dispY - 6));
+
+        if (pred.confidence > bestConfidence) {
+            bestConfidence = pred.confidence;
+            bestLabel = labelText;
         }
-    }
+    });
 
-    return labelText;
+    return bestLabel;
+}
+
+function drawBoundingBoxOnCanvas(ctx, canvasW, canvasH, srcW, srcH, bbox, offset, category, mode) {
+    if (!bbox || bbox.length !== 4) return;
+
+    const [bx1, by1, bx2, by2] = bbox;
+
+    const fullX1 = offset.x + bx1;
+    const fullY1 = offset.y + by1;
+    const fullX2 = offset.x + bx2;
+    const fullY2 = offset.y + by2;
+
+    const scaleX = canvasW / srcW;
+    const scaleY = canvasH / srcH;
+
+    const dx = fullX1 * scaleX;
+    const dy = fullY1 * scaleY;
+    const dw = (fullX2 - fullX1) * scaleX;
+    const dh = (fullY2 - fullY1) * scaleY;
+
+    const style = CATEGORY_STYLE[category] || { label: category, color: "#6366F1", emoji: "" };
+
+    ctx.strokeStyle = style.color;
+    ctx.lineWidth = Math.max(2, canvasW / 150);
+    ctx.strokeRect(dx, dy, dw, dh);
+
+    if (mode === 'full') {
+        const labelText = `${style.emoji} ${style.label}`;
+        const fontSize = Math.max(12, Math.round(canvasW / 45));
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        const textWidth = ctx.measureText(labelText).width;
+        const lblH = fontSize + 10;
+        const lblY = Math.max(0, dy - lblH);
+
+        ctx.fillStyle = style.color;
+        ctx.fillRect(dx, lblY, textWidth + 12, lblH);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillText(labelText, dx + 6, lblY + lblH - 8);
+    }
 }
 
 async function setupCamera() {
@@ -512,7 +637,7 @@ async function liveTrackLoop() {
     if (liveLoopTimeoutId) clearTimeout(liveLoopTimeoutId);
 
     if (isStaticMode || isFrozen) {
-        liveLoopTimeoutId = setTimeout(liveTrackLoop, 100);
+        liveLoopTimeoutId = setTimeout(liveTrackLoop, LIVE_LOOP_INTERVAL_MS);
         return;
     }
 
@@ -520,28 +645,35 @@ async function liveTrackLoop() {
         syncCanvasSize();
 
         try {
-            const blob = await frameToBlob(video, video.videoWidth, video.videoHeight);
-            const result = await callPredictAPI(blob);
-            const labelText = renderPredictionToCanvas(result, canvas.width, canvas.height);
+            const srcRect = getGuideBoxSourceRect(video.videoWidth, video.videoHeight);
+            if (!srcRect) {
+                liveLoopTimeoutId = setTimeout(liveTrackLoop, LIVE_LOOP_INTERVAL_MS);
+                return;
+            }
+            const blob = await cropSourceToBlob(video, srcRect);
+            const data = await callDetectAPI(blob);
+            const rr = getContentRenderRect(video.videoWidth, video.videoHeight);
+            const labelText = renderPredictionsToCanvas(data, srcRect, rr);
 
             const liveCategoryEl = document.getElementById('liveCategory');
             if (liveCategoryEl) {
                 liveCategoryEl.innerText = labelText || "Menunggu Objek...";
             }
 
-            if (labelText && result.confidence > PREDICT_CONFIDENCE_THRESHOLD) {
-                const style = CATEGORY_STYLE[result.class];
-                
-                if (modeToggle.checked) {
-                    autoSnapshotHandler(result.class, style ? style.label : result.class, result.confidence, true);
-                }
-            }
+            const validDetections = (data?.predictions || []).filter(isValidDetection);
+
+           if (validDetections.length > 0 && modeToggle.checked) {
+    validDetections.forEach((det) => {
+        const style = CATEGORY_STYLE[det.class];
+        autoSnapshotHandler(det.class, style ? style.label : det.class, det.confidence, true, det.bbox, { x: srcRect.x, y: srcRect.y });
+    });
+}
         } catch (err) {
             console.error("Live predict error:", err);
         }
     }
 
-    liveLoopTimeoutId = setTimeout(liveTrackLoop, 100);
+    liveLoopTimeoutId = setTimeout(liveTrackLoop, LIVE_LOOP_INTERVAL_MS);
 }
 
 modeToggle.addEventListener('change', () => {
@@ -602,28 +734,32 @@ function resumeCameraLive() {
 
 btnCaptureManual.addEventListener('click', async () => {
     if (isStaticMode || isFrozen) return;
-
     triggerCameraFlashAndFreeze(false);
-
     statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-indigo-500 rounded-full"></span> Menganalisis Snapshot...`;
     statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-3.5 py-1.5 rounded-full animate-none";
-
     try {
         syncCanvasSize();
+        const srcRect = getGuideBoxSourceRect(video.videoWidth, video.videoHeight);
+        const blob = await cropSourceToBlob(video, srcRect);
 
-        const blob = await frameToBlob(video, video.videoWidth, video.videoHeight);
-        const result = await callPredictAPI(blob);
-        const labelText = renderPredictionToCanvas(result, canvas.width, canvas.height);
+        const data = await callDetectAPI(blob);
+        const rr = getContentRenderRect(video.videoWidth, video.videoHeight);
+        const labelText = renderPredictionsToCanvas(data, srcRect, rr);
 
-        if (labelText) {
-            const style = CATEGORY_STYLE[result.class];
-            speakCategory(style ? style.label : result.class);
-            autoSnapshotHandler(result.class, style ? style.label : result.class, result.confidence, false);
+        const validDetections = (data?.predictions || []).filter(isValidDetection);
+
+        if (validDetections.length > 0) {
+            const bestStyle = CATEGORY_STYLE[validDetections[0].class];
+            speakCategory(bestStyle ? bestStyle.label : validDetections[0].class);
+
+            validDetections.forEach((det) => {
+                const style = CATEGORY_STYLE[det.class];
+                autoSnapshotHandler(det.class, style ? style.label : det.class, det.confidence, false, det.bbox, { x: srcRect.x, y: srcRect.y });
+            });
         }
 
         statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Snapshot Manual Selesai`;
         statusEl.className = "text-xs font-semibold inline-flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20 px-3.5 py-1.5 rounded-full animate-none";
-
         const liveCategoryEl = document.getElementById('liveCategory');
         if (liveCategoryEl) {
             liveCategoryEl.innerText = labelText || "Tidak ada objek sampah terdeteksi.";
@@ -665,13 +801,20 @@ async function runStaticDetection(originalFile) {
     syncCanvasSize();
 
     try {
-        const result = await callPredictAPI(originalFile);
-        const labelText = renderPredictionToCanvas(result, canvas.width, canvas.height);
+        const data = await callDetectAPI(originalFile);
+        const rr = getContentRenderRect(previewImage.naturalWidth, previewImage.naturalHeight);
+        const labelText = renderPredictionsToCanvas(data, null, rr);
 
-        if (labelText) {
-            const style = CATEGORY_STYLE[result.class];
-            speakCategory(style ? style.label : result.class);
-            autoSnapshotHandler(result.class, style ? style.label : result.class, result.confidence, false);
+        const validDetections = (data?.predictions || []).filter(isValidDetection);
+
+        if (validDetections.length > 0) {
+            const bestStyle = CATEGORY_STYLE[validDetections[0].class];
+            speakCategory(bestStyle ? bestStyle.label : validDetections[0].class);
+
+            validDetections.forEach((det) => {
+    const style = CATEGORY_STYLE[det.class];
+    autoSnapshotHandler(det.class, style ? style.label : det.class, det.confidence, false, det.bbox, { x: 0, y: 0 });
+});
         }
 
         statusEl.innerHTML = `<span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Analisis File Selesai`;
@@ -716,91 +859,107 @@ async function runStaticDetection(originalFile) {
         }
     });
 
-    function autoSnapshotHandler(objectName, category, score, needsVisualFreeze = false) {
-        const now = Date.now();
+    function autoSnapshotHandler(objectName, category, score, needsVisualFreeze = false, bbox = null, sourceOffset = { x: 0, y: 0 }) {
+    const now = Date.now();
 
-        if (category === lastSavedCategory && (now - lastSavedTime) < 10000) {
-            return;
-        }
-
-        const lastCategoryThrottle = categoryThrottleTimestamps[category] || 0;
-        if ((now - lastCategoryThrottle) < 10000) {
-            return;
-        }
-        
-        lastSavedCategory = category;
-        lastSavedTime = now;
-        categoryThrottleTimestamps[category] = now;
-
-        if (needsVisualFreeze && !isStaticMode && !isFrozen) {
-            triggerCameraFlashAndFreeze(true); 
-            speakCategory(category);
-        }
-
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = 120;
-        tempCanvas.height = 90;
-        const tempCtx = tempCanvas.getContext('2d');
-        
-        if (isStaticMode) {
-            tempCtx.drawImage(previewImage, 0, 0, tempCanvas.width, tempCanvas.height);
-        } else {
-            tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-        }
-        const thumbnail = tempCanvas.toDataURL('image/jpeg', 0.6);
-        
-        const recordUuid = 'scan_' + now + '_' + Math.random().toString(36).substr(2, 9);
-        const recordTimestamp = new Date().toLocaleString('id-ID', { 
-            year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', second: '2-digit'
-        });
-
-        const newRecord = {
-            uuid: recordUuid,
-            timestamp: recordTimestamp,
-            objectName: objectName,
-            category: category,
-            score: Math.round(score * 100),
-            thumbnail: thumbnail,
-            isPermanent: false
-        };
-
-        const history = JSON.parse(localStorage.getItem('ecoscan_history') || '[]');
-        history.unshift(newRecord);
-        localStorage.setItem('ecoscan_history', JSON.stringify(history));
-
-        if (isAuthenticated) {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            fetch('/api/scans', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                body: JSON.stringify({
-                    uuid: recordUuid,
-                    object_name: objectName,
-                    category: category,
-                    score: Math.round(score * 100),
-                    thumbnail: thumbnail,
-                    is_permanent: false
-                })
-            })
-            .then(res => {
-                if (!res.ok) throw new Error("HTTP error " + res.status);
-                return res.json();
-            })
-            .then(data => {
-                console.log("Scan record persisted to database:", data);
-            })
-            .catch(err => {
-                console.error("Failed to persist scan record to database:", err);
-            });
-        }
-        
-        showAutoSnapshotNotification(newRecord);
+    if (category === lastSavedCategory && (now - lastSavedTime) < 10000) {
+        return;
     }
 
+    const lastCategoryThrottle = categoryThrottleTimestamps[category] || 0;
+    if ((now - lastCategoryThrottle) < 10000) {
+        return;
+    }
+    
+    lastSavedCategory = category;
+    lastSavedTime = now;
+    categoryThrottleTimestamps[category] = now;
+
+    if (needsVisualFreeze && !isStaticMode && !isFrozen) {
+        triggerCameraFlashAndFreeze(true); 
+        speakCategory(category);
+    }
+
+    const source = isStaticMode ? previewImage : video;
+    const srcW = isStaticMode ? previewImage.naturalWidth : video.videoWidth;
+    const srcH = isStaticMode ? previewImage.naturalHeight : video.videoHeight;
+
+    const thumbCanvas = document.createElement('canvas');
+    thumbCanvas.width = 120;
+    thumbCanvas.height = 90;
+    const thumbCtx = thumbCanvas.getContext('2d');
+    thumbCtx.drawImage(source, 0, 0, thumbCanvas.width, thumbCanvas.height);
+    if (bbox) {
+        drawBoundingBoxOnCanvas(thumbCtx, thumbCanvas.width, thumbCanvas.height, srcW, srcH, bbox, sourceOffset, objectName, 'thumb');
+    }
+    const thumbnail = thumbCanvas.toDataURL('image/jpeg', 0.6);
+
+   
+    const MAX_FULL_WIDTH = 1280;
+    const fullScale = srcW > MAX_FULL_WIDTH ? MAX_FULL_WIDTH / srcW : 1;
+    const fullCanvas = document.createElement('canvas');
+    fullCanvas.width = Math.round(srcW * fullScale);
+    fullCanvas.height = Math.round(srcH * fullScale);
+    const fullCtx = fullCanvas.getContext('2d');
+    fullCtx.drawImage(source, 0, 0, fullCanvas.width, fullCanvas.height);
+    if (bbox) {
+        drawBoundingBoxOnCanvas(fullCtx, fullCanvas.width, fullCanvas.height, srcW, srcH, bbox, sourceOffset, objectName, 'full');
+    }
+    const fullImage = fullCanvas.toDataURL('image/jpeg', 0.85);
+
+    const recordUuid = 'scan_' + now + '_' + Math.random().toString(36).substr(2, 9);
+    const recordTimestamp = new Date().toLocaleString('id-ID', { 
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+
+    const newRecord = {
+        uuid: recordUuid,
+        timestamp: recordTimestamp,
+        objectName: objectName,
+        category: category,
+        score: Math.round(score * 100),
+        thumbnail: thumbnail,
+        fullImage: fullImage,
+        isPermanent: false
+    };
+
+    const history = JSON.parse(localStorage.getItem('ecoscan_history') || '[]');
+    history.unshift(newRecord);
+    localStorage.setItem('ecoscan_history', JSON.stringify(history));
+
+    if (isAuthenticated) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        fetch('/api/scans', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: JSON.stringify({
+                uuid: recordUuid,
+                object_name: objectName,
+                category: category,
+                score: Math.round(score * 100),
+                thumbnail: thumbnail,
+                full_image: fullImage,
+                is_permanent: false
+            })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("HTTP error " + res.status);
+            return res.json();
+        })
+        .then(data => {
+            console.log("Scan record persisted to database:", data);
+        })
+        .catch(err => {
+            console.error("Failed to persist scan record to database:", err);
+        });
+    }
+    
+    showAutoSnapshotNotification(newRecord);
+}
     let notificationTimeout = null;
 
     function showAutoSnapshotNotification(record) {

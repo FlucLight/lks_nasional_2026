@@ -14,6 +14,7 @@ class TrashScan extends Model
         'category',
         'score',
         'thumbnail',
+        'full_image',
         'is_permanent',
     ];
 

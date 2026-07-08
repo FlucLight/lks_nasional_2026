@@ -8,8 +8,8 @@ Route::get('/', function () {
     return view('welcome');
 })->name('dashboard');
 
-Route::post('/predict', [PredictController::class, 'predict']);
-Route::post('/api/predict', [PredictController::class, 'predict']);
+Route::post('/detect', [PredictController::class, 'detect']);
+Route::post('/api/detect', [PredictController::class, 'detect']);
 
 Route::middleware([
     'auth:sanctum',
